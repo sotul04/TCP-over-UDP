@@ -7,6 +7,8 @@ struct Segment
 {
     uint16_t sourcePort : 16;
     uint16_t destPort;
+    uint32_t seqNum;
+    uint32_t ackNum;
     // todo continue
 
     struct
@@ -18,12 +20,20 @@ struct Segment
     struct
     {
         unsigned int cwr : 1;
-        // todo continue ...
+        unsigned int ece : 1;
+        unsigned int urg : 1;
+        unsigned int ack : 1;
+        unsigned int psh : 1;
+        unsigned int rst : 1;
+        unsigned int syn : 1;
+        unsigned int fin : 1;
     } flags;
 
     uint16_t window;
+    uint8_t* checksum;
     // todo continue
     uint8_t *payload;
+    uint8_t payloadSize;
 } __attribute__((packed));
 
 const uint8_t FIN_FLAG = 1;
