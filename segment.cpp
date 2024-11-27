@@ -38,6 +38,35 @@ Segment ack(uint32_t seqNum, uint32_t ackNum) {
     return s;
 }
 
+Segment synAck(uint32_t seqNum) {
+    Segment s;
+    s.data_offset = 20;
+    s.reserved = 0;
+    s.flags.ack = 1;
+    s.flags.syn = 1;
+    s.window = 65535;
+    return s;
+}
+
+Segment fin() {
+    Segment s;
+    s.data_offset = 20;
+    s.reserved = 0;
+    s.flags.fin = 1;
+    s.window = 65535;
+    return s;
+}
+
+Segment finAck() {
+    Segment s;
+    s.data_offset = 20;
+    s.reserved = 0;
+    s.flags.fin = 1;
+    s.flags.ack = 1;
+    s.window = 65535;
+    return s;
+}
+
 // int main () {
 //     syn(12345);
 //     return 0;
