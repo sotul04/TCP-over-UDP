@@ -5,11 +5,10 @@
 
 struct Segment
 {
-    uint16_t sourcePort : 16;
+    uint16_t sourcePort;
     uint16_t destPort;
     uint32_t seqNum;
     uint32_t ackNum;
-    // todo continue
 
     struct
     {
@@ -30,8 +29,9 @@ struct Segment
     } flags;
 
     uint16_t window;
-    uint8_t* checksum;
-    // todo continue
+    uint16_t checksum;
+    uint16_t urgentPointer;
+
     uint8_t *payload;
     uint8_t payloadSize;
 } __attribute__((packed));
@@ -68,7 +68,7 @@ Segment fin();
 Segment finAck();
 
 // update return type as needed
-uint8_t *calculateChecksum(Segment segment);
+uint16_t calculateChecksum(Segment segment);
 
 /**
  * Return a new segment with a calcuated checksum fields
