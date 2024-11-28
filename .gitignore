@@ -34,3 +34,5 @@
 # other
 .vscode
 .github
+server*
+client*

@@ -2,6 +2,8 @@
 #define segment_h
 
 #include <cstdint>
+#include <iostream>
+#include <iomanip>
 
 struct Segment
 {
@@ -79,5 +81,7 @@ Segment updateChecksum(Segment segment);
  * Check if a TCP Segment has a valid checksum
  */
 bool isValidChecksum(Segment segment);
+
+void printSegment(const Segment &segment);
 
 #endif

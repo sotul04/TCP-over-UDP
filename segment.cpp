@@ -108,3 +108,51 @@ bool isValidChecksum(Segment segment)
     uint16_t computedChecksum = calculateChecksum(segment);
     return computedChecksum == segment.checksum;
 }
+
+void printSegment(const Segment &segment)
+{
+    using namespace std;
+
+    cout << "Segment Details:" << endl;
+    cout << "Source Port: " << segment.sourcePort << endl;
+    cout << "Destination Port: " << segment.destPort << endl;
+    cout << "Sequence Number: " << segment.seqNum << endl;
+    cout << "Acknowledgment Number: " << segment.ackNum << endl;
+    cout << "Data Offset: " << static_cast<int>(segment.data_offset) << endl;
+    cout << "Reserved: " << static_cast<int>(segment.reserved) << endl;
+
+    cout << "Flags:" << endl;
+    cout << "  CWR: " << static_cast<int>(segment.flags.cwr) << endl;
+    cout << "  ECE: " << static_cast<int>(segment.flags.ece) << endl;
+    cout << "  URG: " << static_cast<int>(segment.flags.urg) << endl;
+    cout << "  ACK: " << static_cast<int>(segment.flags.ack) << endl;
+    cout << "  PSH: " << static_cast<int>(segment.flags.psh) << endl;
+    cout << "  RST: " << static_cast<int>(segment.flags.rst) << endl;
+    cout << "  SYN: " << static_cast<int>(segment.flags.syn) << endl;
+    cout << "  FIN: " << static_cast<int>(segment.flags.fin) << endl;
+
+    cout << "Window Size: " << segment.window << endl;
+    cout << "Checksum: 0x" << hex << setw(4) << setfill('0') << segment.checksum << dec << endl;
+    cout << "Urgent Pointer: " << segment.urgentPointer << endl;
+
+    if (segment.payloadSize > 0 && segment.payload != nullptr)
+    {
+        cout << "Payload (" << segment.payloadSize << " bytes): ";
+        for (uint16_t i = 0; i < segment.payloadSize; ++i)
+        {
+            cout << segment.payload[i];
+        }
+        cout << endl;
+
+        cout << "Payload (Hex): ";
+        for (uint16_t i = 0; i < segment.payloadSize; ++i)
+        {
+            cout << hex << setw(2) << setfill('0') << static_cast<int>(segment.payload[i]) << " ";
+        }
+        cout << dec << endl;
+    }
+    else
+    {
+        cout << "Payload: (none)" << endl;
+    }
+}
