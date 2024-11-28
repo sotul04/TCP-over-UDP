@@ -1,0 +1,1 @@
+g++ -o server server.cpp segment.cpp segment_handler.cpp serialize.cpp
