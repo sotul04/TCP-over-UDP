@@ -33,7 +33,7 @@ struct Segment
     uint16_t urgentPointer;
 
     uint8_t *payload;
-    uint8_t payloadSize;
+    uint16_t payloadSize;
 } __attribute__((packed));
 
 const uint8_t FIN_FLAG = 1;

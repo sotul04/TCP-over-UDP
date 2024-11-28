@@ -83,7 +83,7 @@ uint16_t calculateChecksum(Segment segment)
 
     if (segment.payload != nullptr && segment.payloadSize > 0)
     {
-        for (uint8_t i = 0; i < segment.payloadSize; i++)
+        for (uint16_t i = 0; i < segment.payloadSize; i++)
         {
             sum += segment.payload[i];
         }
