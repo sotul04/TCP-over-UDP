@@ -13,7 +13,7 @@ class Message {
         uint16_t port;
         Segment segment;
 
-        Message(string ipAddress, uint16_t port, Segment segment);
+        Message(string ipAddress="0.0.0.0", uint16_t port=80, Segment segment={});
         ~Message();
 
         bool operator==(const Message &message) const;

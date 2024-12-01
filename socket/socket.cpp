@@ -2,6 +2,7 @@
 #include "../config/Config.hpp"
 #include "../segment/serialize.hpp"
 #include "../segment/segment.hpp"
+#include "../message/messageQuery.hpp"
 
 TCPSocket::TCPSocket(const string ip, const int32_t &port)
 {
@@ -95,6 +96,46 @@ void TCPSocket::listenThreadStop() {
     listener.join();
 }
 
-void TCPSocket::listen() {
-    
+Message TCPSocket::listen(MessageQuery* message, int timeout) {
+    Message *retval = nullptr;
+    chrono::steady_clock::time_point limit;
+    if (timeout != NULL) {
+        auto start = chrono::steady_clock::now();
+        limit = start + chrono::seconds(timeout);
+    }
+    if (message == nullptr) {
+        while (retval == nullptr) {
+            try {
+                if (packetBuffer.empty()) {
+                    *retval = packetBuffer.front();
+                    packetBuffer.erase(packetBuffer.begin());
+                }
+            } catch (exception e) {
+
+            }
+
+            if ((timeout != NULL) && chrono::steady_clock::now() > limit) {
+                throw runtime_error("Error");
+            }
+        }
+    } else {
+        while (retval == nullptr) {
+            try {
+                for (int i = 0; i < packetBuffer.size(); i++) {
+                    if (message->validateMessageQuery(packetBuffer[i])) {
+                        *retval = packetBuffer[i];
+                        packetBuffer.erase(packetBuffer.begin() + i);
+                        break;
+                    }
+                }
+            } catch (exception e) {
+                
+            }
+
+            if ((timeout != NULL) && chrono::steady_clock::now() > limit) {
+                throw std::runtime_error("Error");
+            }
+        }
+    }
+    return *retval;
 }

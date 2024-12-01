@@ -18,6 +18,7 @@
 #include "segment/segment.hpp"
 #include "segment/segment_handler.hpp"
 #include "message/message.hpp"
+#include "message/messageQuery.hpp"
 
 #define MAXPACKETBUFFERSIZE 1500
 #define DEFAULTCOLLECTINGTIME 10
@@ -88,7 +89,7 @@ public:
     void listenThreadWorker();
     void listenThreadStop();
     void listenThreadStart();
-    void listen();
+    Message listen(MessageQuery*, int);
 };
 
 #endif
