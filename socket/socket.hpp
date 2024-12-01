@@ -1,10 +1,17 @@
 #ifndef socket_h
 #define socket_h
 
+#include <bits/stdc++.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <string>
 #include <queue>
 #include <functional>
+#include <thread>
 #include <stdlib.h>
 #include "segment/segment.hpp"
 #include "segment/segment_handler.hpp"
@@ -40,11 +47,17 @@ private:
      */
     string ip;
     int32_t port;
+
+    int timeOutDefTime;
     
     vector<Message> packetBuffer;
     int packetCollectingTime;
 
     bool listenStatus=false;
+
+    thread listener;
+
+    thread collectGarbage;
 
     /**
      * Socket descriptor
@@ -58,7 +71,6 @@ private:
 public:
     TCPSocket(const string ip, const int32_t &port);
     ~TCPSocket();
-    void listen();
     void send(string ip, int32_t port, void *dataStream, uint32_t dataSize);
     int32_t recv(void *buffer, uint32_t length);
     void close();
@@ -66,6 +78,11 @@ public:
     void setPacketCollectingTime(int time);
     void cleanPacketBuffer();
     void managePacketGarbage();
+
+    void listenThreadWorker();
+    void listenThreadStop();
+    void listenThreadStart();
+    void listen();
 };
 
 #endif
