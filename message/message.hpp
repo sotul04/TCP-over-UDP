@@ -15,6 +15,8 @@ class Message {
 
         Message(string ipAddress, uint16_t port, Segment segment);
         ~Message();
+
+        bool operator==(const Message &message) const;
 };
 
 #endif

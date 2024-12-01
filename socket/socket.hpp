@@ -6,9 +6,15 @@
 #include <queue>
 #include <functional>
 #include <stdlib.h>
+#include <chrono>
+#include <thread>
 #include "segment/segment.hpp"
 #include "segment/segment_handler.hpp"
 #include "message/message.hpp"
+
+#define MAXPACKETBUFFERSIZE 1500
+#define DEFAULTCOLLECTINGTIME 10
+#define MINCOLLECTINGTIME 1
 
 using namespace std;
 

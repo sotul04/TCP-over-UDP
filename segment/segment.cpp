@@ -156,3 +156,26 @@ void printSegment(const Segment &segment)
         cout << "Payload: (none)" << endl;
     }
 }
+
+bool operator==(const Segment &lhs, const Segment &rhs)
+{
+    return lhs.sourcePort == rhs.sourcePort &&
+           lhs.destPort == rhs.destPort &&
+           lhs.seqNum == rhs.seqNum &&
+           lhs.ackNum == rhs.ackNum &&
+           lhs.data_offset == rhs.data_offset &&
+           lhs.reserved == rhs.reserved &&
+           lhs.flags.cwr == rhs.flags.cwr &&
+           lhs.flags.ece == rhs.flags.ece &&
+           lhs.flags.urg == rhs.flags.urg &&
+           lhs.flags.ack == rhs.flags.ack &&
+           lhs.flags.psh == rhs.flags.psh &&
+           lhs.flags.rst == rhs.flags.rst &&
+           lhs.flags.syn == rhs.flags.syn &&
+           lhs.flags.fin == rhs.flags.fin &&
+           lhs.window == rhs.window &&
+           lhs.checksum == rhs.checksum &&
+           lhs.urgentPointer == rhs.urgentPointer &&
+           lhs.payloadSize == rhs.payloadSize &&
+           memcmp(lhs.payload, rhs.payload, lhs.payloadSize) == 0;
+}

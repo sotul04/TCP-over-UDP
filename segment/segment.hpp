@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <iostream>
 #include <iomanip>
+#include <cstring>
 
 struct Segment
 {
@@ -83,5 +84,7 @@ Segment updateChecksum(Segment segment);
 bool isValidChecksum(Segment segment);
 
 void printSegment(const Segment &segment);
+
+bool operator==(const Segment &lhs, const Segment &rhs);
 
 #endif
