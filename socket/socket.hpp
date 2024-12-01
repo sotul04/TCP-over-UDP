@@ -3,9 +3,12 @@
 
 #include <sys/socket.h>
 #include <string>
+#include <queue>
 #include <functional>
+#include <stdlib.h>
 #include "segment/segment.hpp"
 #include "segment/segment_handler.hpp"
+#include "message/message.hpp"
 
 using namespace std;
 
@@ -37,6 +40,11 @@ private:
      */
     string ip;
     int32_t port;
+    
+    vector<Message> packetBuffer;
+    int packetCollectingTime;
+
+    bool listenStatus=false;
 
     /**
      * Socket descriptor
@@ -54,6 +62,10 @@ public:
     void send(string ip, int32_t port, void *dataStream, uint32_t dataSize);
     int32_t recv(void *buffer, uint32_t length);
     void close();
+
+    void setPacketCollectingTime(int time);
+    void cleanPacketBuffer();
+    void managePacketGarbage();
 };
 
 #endif
