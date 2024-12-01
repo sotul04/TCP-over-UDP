@@ -7,8 +7,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include "segment.hpp"
-#include "serialize.hpp"
+#include "segment/segment.hpp"
+#include "segment/serialize.hpp"
 
 using namespace std;
 
@@ -35,7 +35,7 @@ int main()
 
 	// Filling server information
 	servaddr.sin_family = AF_INET; // IPv4
-	servaddr.sin_addr.s_addr = INADDR_ANY;
+	servaddr.sin_addr.s_addr = inet_addr("172.31.90.136");
 	servaddr.sin_port = htons(PORT);
 
 	// Bind the socket with the server address

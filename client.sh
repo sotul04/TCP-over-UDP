@@ -1,1 +1,1 @@
-g++ -o client client.cpp segment.cpp segment_handler.cpp serialize.cpp
+g++ -o client client.cpp segment/segment.cpp segment/segment_handler.cpp segment/serialize.cpp

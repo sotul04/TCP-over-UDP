@@ -4,8 +4,8 @@
 #include <sys/socket.h>
 #include <string>
 #include <functional>
-#include "segment.hpp"
-#include "segment_handler.hpp"
+#include "segment/segment.hpp"
+#include "segment/segment_handler.hpp"
 
 using namespace std;
 
@@ -22,7 +22,9 @@ enum TCPStatusEnum
     FIN_WAIT_2 = 5,
     CLOSE_WAIT = 6,
     CLOSING = 7,
-    LAST_ACK = 8
+    LAST_ACK = 8,
+    TIME_WAIT = 9,
+    CLOSED = 10,
 };
 
 class TCPSocket
@@ -46,6 +48,8 @@ private:
     TCPStatusEnum status;
 
 public:
+    TCPSocket(const string ip, const int32_t &port);
+    ~TCPSocket();
     void listen();
     void send(string ip, int32_t port, void *dataStream, uint32_t dataSize);
     int32_t recv(void *buffer, uint32_t length);
