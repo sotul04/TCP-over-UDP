@@ -8,7 +8,7 @@ TCPSocket::TCPSocket(const string ip, const int32_t &port)
     this->ip = ip;
     this->port = port;
 
-    this->packetCollectingTime = 0.1;
+    this->packetCollectingTime = DEFAULTCOLLECTINGTIME;
     this->packetBuffer = vector<Message>();
 
     if ((socket = ::socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -37,9 +37,22 @@ void TCPSocket::cleanPacketBuffer()
 void TCPSocket::managePacketGarbage()
 {
     while (listenStatus) {
-        try {
-        }
+        try 
+        {
+            Message firstMessage = packetBuffer.front();
 
+            std::this_thread::sleep_for(std::chrono::seconds(this->packetCollectingTime));
+
+            if (packetBuffer.front() == firstMessage) {
+                packetBuffer.erase(packetBuffer.begin());
+            }
+
+            if (packetBuffer.size() > MAXPACKETBUFFERSIZE) {
+                setPacketCollectingTime(MINCOLLECTINGTIME);
+            } else {
+                setPacketCollectingTime(DEFAULTCOLLECTINGTIME);
+            }
+        } 
         catch (exception &e) {}
     }
 }
