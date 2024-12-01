@@ -33,6 +33,9 @@ int main()
 	memset(&servaddr, 0, sizeof(servaddr));
 	memset(&cliaddr, 0, sizeof(cliaddr));
 
+	std::cout << "1. PORT: " << cliaddr.sin_port << " ADDR: " << inet_ntoa(cliaddr.sin_addr) << endl;
+
+
 	// Filling server information
 	servaddr.sin_family = AF_INET; // IPv4
 	servaddr.sin_addr.s_addr = inet_addr("172.31.90.136");
@@ -54,6 +57,9 @@ int main()
 	n = recvfrom(sockfd, buffer, MAXLINE,
 				 MSG_WAITALL, (struct sockaddr *)&cliaddr,
 				 &len);
+	
+	std::cout << "2. PORT: " << cliaddr.sin_port << " ADDR: " << inet_ntoa(cliaddr.sin_addr) << endl;
+
 	if (n < 0) {
 		printf("Empty data\n");
 	} else {
