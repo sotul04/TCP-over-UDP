@@ -6,9 +6,14 @@ public:
 
     void run() {
         connection->start();
-        Connection status = connection->accHandShake("", 0);
+
+        // listening to broadcast
+        cout << "Listening to the broadcast port for clients." << endl;
+        Connection cont = connection->listenBroadcast();
+
+        Connection status = connection->accHandShake(cont.ip, cont.port);
         cout << status.cont << endl;
-        connection->stop();
+        connection->close();
     }
 
     void handleMessage(void *buffer) override {
@@ -17,6 +22,6 @@ public:
 };
 
 int main() {
-    Server server("172.31.90.136", 8080);
+    Server server("127.0.0.1", 8080);
     server.run();
 }

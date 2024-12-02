@@ -1,6 +1,53 @@
 #include "TCPSocket.hpp"
 #include "../random/random.hpp"
 
+Connection TCPSocket::seekBroadcast(string destIP, uint16_t destPort)
+{
+    try
+    {
+        bindAddress();
+        setBroadcast();
+        Segment searchMsg = makeSegment("SEARCHING", port, destPort);
+        sendSegment(searchMsg, destIP, destPort);
+
+        // // test
+        // const char *test = "SEARCHING";
+        // MessageFilter filter1 = MessageFilter::payloadsQuery((uint8_t *)test, strlen(test));
+        // cout << filter1.validate(Message(destIP, destPort, searchMsg)) << endl;
+
+        const char *payload = "APPROVED";
+        MessageFilter filter = MessageFilter::payloadsQuery((uint8_t *)payload, strlen(payload));
+        Message response = listen(&filter, HANDSHAKE_TIMEOUT);
+
+        return Connection(true, response.ip, response.port, 0, 0);
+    }
+    catch (const TimeoutException &te)
+    {
+        cout << "REQUEST TIMEOUT, terminating..." << endl;
+        exit(EXIT_SUCCESS);
+    }
+}
+
+Connection TCPSocket::listenBroadcast()
+{
+    try
+    {
+        bindAddress();
+        const char *payload = "SEARCHING";
+        MessageFilter filter = MessageFilter::payloadsQuery((uint8_t *)payload, strlen(payload));
+        Message searchingMsg = listen(&filter, BROADCAST_LISTEN_TIMEOUT);
+
+        Segment response = makeSegment("APPROVED", port, searchingMsg.port);
+        sendSegment(response, searchingMsg.ip, searchingMsg.port);
+        return Connection(true, searchingMsg.ip, searchingMsg.port, 0, 0);
+    }
+    catch (const TimeoutException &te)
+    {
+        cout << "LISTEN TIMEOUT, terminating..." << endl;
+        exit(EXIT_SUCCESS);
+    }
+}
+
 // Request Handshake (Client-side)
 Connection TCPSocket::reqHandShake(string destIP, uint16_t destPort)
 {
@@ -12,11 +59,9 @@ Connection TCPSocket::reqHandShake(string destIP, uint16_t destPort)
         {
             cout << "Retry #" << (RETRIES - retries + 1) << ": Sending SYN to " << destIP << ":" << destPort << endl;
 
-            // Send SYN
             sendSegment(syn(seqNum), destIP, destPort);
             cout << "SYN sent: Seq=" << seqNum << endl;
 
-            // Wait for SYN-ACK
             uint8_t synAckFlag = SYN_ACK_FLAG;
             MessageFilter filter = MessageFilter::ipNPortNFlagsQuery(destIP, destPort, synAckFlag);
             Message synAckMessage = listen(&filter, HANDSHAKE_TIMEOUT);
@@ -25,7 +70,6 @@ Connection TCPSocket::reqHandShake(string destIP, uint16_t destPort)
                  << " Seq=" << synAckMessage.segment.seqNum
                  << " Ack=" << synAckMessage.segment.ackNum << endl;
 
-            // Send ACK
             uint32_t ackNum = synAckMessage.segment.seqNum + 1;
             seqNum++;
             sendSegment(ack(seqNum, ackNum), destIP, destPort);

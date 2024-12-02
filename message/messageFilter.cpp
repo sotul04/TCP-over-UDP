@@ -88,7 +88,9 @@ bool MessageFilter::validate(const Message &message)
         size_t messagePayloadSize = message.segment.payloadSize;
 
         if (payloadSize != messagePayloadSize)
+        {
             return false;
+        }
 
         if (std::memcmp(payload, messagePayload, payloadSize) != 0)
             return false;

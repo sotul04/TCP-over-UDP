@@ -251,3 +251,26 @@ Segment deserializeSegment(const uint8_t *buffer, uint32_t length)
 
     return segment;
 }
+
+Segment makeSegment(const std::string &data, uint16_t sport, uint16_t dport)
+{
+    Segment segment = {};
+
+    segment.payloadSize = static_cast<uint16_t>(data.length());
+
+    segment.payload = new uint8_t[segment.payloadSize];
+    std::memcpy(segment.payload, data.c_str(), segment.payloadSize);
+
+    segment.flags.syn = 0;
+
+    segment.sourcePort = sport;
+    segment.destPort = dport;
+    segment.seqNum = 0;
+    segment.ackNum = 0;
+    segment.window = 0;
+    segment.urgentPointer = 0;
+
+    segment.data_offset = 5;
+
+    return segment;
+}

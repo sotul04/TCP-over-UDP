@@ -3,8 +3,10 @@
 
 #include <cstdint>
 #include <iostream>
+#include <string>
 #include <iomanip>
 #include <cstring>
+using namespace std;
 
 struct Segment
 {
@@ -91,5 +93,7 @@ Segment copySegment(const Segment &source);
 
 void serializeSegment(const Segment &segment, uint8_t *buffer);
 Segment deserializeSegment(const uint8_t *buffer, uint32_t length);
+
+Segment makeSegment(const string &data, uint16_t sport, uint16_t dport);
 
 #endif

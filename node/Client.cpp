@@ -12,9 +12,16 @@ public:
 
     void run() {
         connection->start();
-        Connection status = connection->reqHandShake(destIP, destPort);
+
+        // try to send request to broadcast
+        cout << "Trying to contact the sender at " << destIP << ":" << destPort << endl;
+        Connection cont =  connection->seekBroadcast(destIP, destPort);
+
+        cout << "STARTING HANDSHAKE" << endl;
+
+        Connection status = connection->reqHandShake(cont.ip, cont.port);
         cout << status.cont << endl;
-        connection->stop();
+        connection->close();
     }
 
     void handleMessage(void *buffer) override {
@@ -23,6 +30,6 @@ public:
 };
 
 int main() {
-    Client client("172.31.90.136", 9090, "172.31.90.136", 8080);
+    Client client("127.0.0.1", 9090, "127.0.0.1", 8080);
     client.run();
 }

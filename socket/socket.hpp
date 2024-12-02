@@ -84,6 +84,11 @@ public:
     // int32_t recv(void *buffer, uint32_t length);
     void close();
 
+    //auxiliary
+    struct sockaddr_in generateAddress(string, uint16_t);
+    void bindAddress();
+    void setBroadcast();
+
     void setCleanerTime(float);
     void clearPacketBuffer();
     void cleanerPacketThread();
