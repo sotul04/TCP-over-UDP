@@ -15,10 +15,13 @@
 #include <stdlib.h>
 #include <chrono>
 #include <thread>
-#include "segment/segment.hpp"
-#include "segment/segment_handler.hpp"
-#include "message/message.hpp"
-#include "message/messageQuery.hpp"
+#include <mutex>
+#include "../segment/segment.hpp"
+#include "../segment/segment_handler.hpp"
+#include "../message/message.hpp"
+#include "../message/messageFilter.hpp"
+#include "../config/Config.hpp"
+#include "Timeout.hpp"
 
 #define MAXPACKETBUFFERSIZE 1500
 #define DEFAULTCOLLECTINGTIME 10
@@ -44,28 +47,16 @@ enum TCPStatusEnum
     CLOSED = 10,
 };
 
-class TCPSocket
+class Socket
 {
     // todo add tcp connection state?
-private:
+protected:
     /**
      * The ip address and port for the socket instance
      * Not to be confused with ip address and port of the connected connection
      */
     string ip;
-    int32_t port;
-
-    int timeOutDefTime;
-    
-    vector<Message> packetBuffer;
-    int packetCollectingTime;
-
-    bool listenStatus=false;
-
-    thread listener;
-
-    thread collectGarbage;
-
+    int16_t port;
     /**
      * Socket descriptor
      */
@@ -75,21 +66,33 @@ private:
 
     TCPStatusEnum status;
 
+    vector<Message> packetBuffer;
+    float cleanerTime;
+
+    int timeoutDefault;
+    bool isListening;
+    thread listener;
+    thread cleaner;
+
+    std::mutex bufferMutex;
+
 public:
-    TCPSocket(const string ip, const int32_t &port);
-    ~TCPSocket();
-    void send(string ip, int32_t port, void *dataStream, uint32_t dataSize);
-    int32_t recv(void *buffer, uint32_t length);
+    Socket(const string ip, const int16_t &port);
+    ~Socket();
+    // void send(string ip, int32_t port, void *dataStream, uint32_t dataSize);
+    // int32_t recv(void *buffer, uint32_t length);
     void close();
 
-    void setPacketCollectingTime(int time);
-    void cleanPacketBuffer();
-    void managePacketGarbage();
+    void setCleanerTime(float);
+    void clearPacketBuffer();
+    void cleanerPacketThread();
 
-    void listenThreadWorker();
-    void listenThreadStop();
-    void listenThreadStart();
-    Message listen(MessageQuery*, int);
+    void listenerPacketThread();
+    void start();
+    void stop();
+    Message listen(MessageFilter*, int);
+
+    void sendSegment(Segment, string, uint16_t);
 };
 
 #endif

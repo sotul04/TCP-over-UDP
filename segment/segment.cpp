@@ -23,10 +23,11 @@ Segment ack(uint32_t seqNum, uint32_t ackNum)
     return segment;
 }
 
-Segment synAck(uint32_t seqNum)
+Segment synAck(uint32_t seqNum, uint32_t ackNum)
 {
     Segment segment = {};
     segment.seqNum = seqNum;
+    segment.ackNum = ackNum;
     segment.flags.syn = 1;
     segment.flags.ack = 1;
     segment.data_offset = 5;

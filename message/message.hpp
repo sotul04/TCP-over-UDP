@@ -3,7 +3,7 @@
 
 #include <string>
 #include <cstdint>
-#include "segment/segment.hpp"
+#include "../segment/segment.hpp"
 
 using namespace std;
 
@@ -15,6 +15,7 @@ public:
     Segment segment;
 
     Message(string ip, uint16_t port, Segment segment);
+    Message(const Message&);
     ~Message();
 
     bool operator==(const Message &message) const;

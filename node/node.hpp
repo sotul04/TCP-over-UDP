@@ -1,7 +1,7 @@
 #ifndef node_h
 #define node_h
 
-#include "socket.hpp"
+#include "../socket/TCPSocket.hpp"
 
 /**
  * Abstract class.
@@ -14,7 +14,9 @@ protected:
     TCPSocket *connection;
 
 public:
+    Node(string ip, uint16_t port);
     void run();
+    virtual ~Node();
     virtual void handleMessage(void *buffer) = 0;
 };
 

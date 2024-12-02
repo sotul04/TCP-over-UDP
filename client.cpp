@@ -8,7 +8,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include "segment/segment.hpp"
-#include "segment/serialize.hpp"
 
 #define PORT 8080
 #define MAXLINE 1500

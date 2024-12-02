@@ -7,6 +7,13 @@ Message::Message(string ip, uint16_t port, Segment segment)
     this->segment = segment;
 }
 
+Message::Message(const Message& other) 
+{
+    this->ip= other.ip;
+    this->port = other.port;
+    this->segment = other.segment;
+}
+
 Message::~Message() {
     delete[] segment.payload;
 }

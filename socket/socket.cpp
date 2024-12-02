@@ -1,141 +1,212 @@
 #include "socket.hpp"
-#include "../config/Config.hpp"
-#include "../segment/serialize.hpp"
-#include "../segment/segment.hpp"
-#include "../message/messageQuery.hpp"
 
-TCPSocket::TCPSocket(const string ip, const int32_t &port)
+Socket::Socket(const string ip, const int16_t &port)
 {
     this->ip = ip;
     this->port = port;
 
-    this->packetCollectingTime = DEFAULTCOLLECTINGTIME;
-    this->packetBuffer = vector<Message>();
-
-    if ((socket = ::socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+    socket = ::socket(AF_INET, SOCK_DGRAM, 0);
+    if (socket < 0)
+    {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
+
+    // binding
+    struct sockaddr_in sock_addr = {};
+    sock_addr.sin_family = AF_INET;
+    sock_addr.sin_addr.s_addr = inet_addr(ip.c_str());
+    sock_addr.sin_port = htons(port);
+
+    if (bind(socket, (const struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0)
+    {
+        perror("Bind failed");
+        exit(EXIT_FAILURE);
+    }
+
     segmentHandler = new SegmentHandler();
     status = CLOSED;
+
+    cout << "Socket created" << endl;
+
+    cleanerTime = CLEANER_TIME;
+    isListening = false;
 }
 
-TCPSocket::~TCPSocket()
+Socket::~Socket()
 {
     delete segmentHandler;
+    packetBuffer.clear();
 }
 
-void TCPSocket::setPacketCollectingTime(int time)
+void Socket::setCleanerTime(float time)
 {
-    this->packetCollectingTime = time;
+    this->cleanerTime = time;
 }
 
-void TCPSocket::cleanPacketBuffer()
+void Socket::clearPacketBuffer()
 {
     packetBuffer.clear();
 }
 
-void TCPSocket::managePacketGarbage()
+void Socket::cleanerPacketThread()
 {
-    while (listenStatus) {
-        try 
+    while (isListening)
+    {
+        try
         {
-            Message firstMessage = packetBuffer.front();
+            if (!packetBuffer.empty())
+            {
+                Message firstMessage = packetBuffer.front();
 
-            std::this_thread::sleep_for(std::chrono::seconds(this->packetCollectingTime));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(cleanerTime * 1000)));
 
-            if (packetBuffer.front() == firstMessage) {
-                packetBuffer.erase(packetBuffer.begin());
-            }
-
-            if (packetBuffer.size() > MAXPACKETBUFFERSIZE) {
-                setPacketCollectingTime(MINCOLLECTINGTIME);
-            } else {
-                setPacketCollectingTime(DEFAULTCOLLECTINGTIME);
-            }
-        } 
-        catch (exception &e) {}
-    }
-}
-
-void TCPSocket::listenThreadWorker() {
-    uint8_t *buffer = new uint8_t[MAXLINE];
-    struct sockaddr_in cliaddr;
-    socklen_t len = sizeof(cliaddr);
-    
-    while (listenStatus) {
-        try {
-            int n = recvfrom(socket, buffer, 
-                            MAXLINE, MSG_WAITALL, 
-                            (struct sockaddr*) &cliaddr, 
-                            &len);
-            Segment received = deserializeSegment(buffer, n);
-            if (!isValidChecksum(received)) {
-                throw runtime_error("Segment not valid");
-            }
-            try {
-                Message newMessage(inet_ntoa(cliaddr.sin_addr), cliaddr.sin_port, received);
-                packetBuffer.push_back(newMessage);
-            } catch (exception e) {
-                cout << "Bad packet" << "\n";
-            }
-        } catch (exception e) {
-            // do nothing
-        }
-    }
-}
-
-void TCPSocket::listenThreadStart() {
-    listenStatus = true;
-    listener = thread(listenThreadWorker);
-    collectGarbage = thread(managePacketGarbage);
-}
-
-void TCPSocket::listenThreadStop() {
-    listenStatus = false;
-    listener.join();
-}
-
-Message TCPSocket::listen(MessageQuery* message, int timeout) {
-    Message *retval = nullptr;
-    chrono::steady_clock::time_point limit;
-    if (timeout != NULL) {
-        auto start = chrono::steady_clock::now();
-        limit = start + chrono::seconds(timeout);
-    }
-    if (message == nullptr) {
-        while (retval == nullptr) {
-            try {
-                if (packetBuffer.empty()) {
-                    *retval = packetBuffer.front();
+                if (!packetBuffer.empty() && packetBuffer.front() == firstMessage)
+                {
                     packetBuffer.erase(packetBuffer.begin());
                 }
-            } catch (exception e) {
 
+                if (packetBuffer.size() > CLEANER_LIMIT)
+                {
+                    setCleanerTime(MIN_CLEANER_TIME);
+                }
+                else
+                {
+                    setCleanerTime(CLEANER_TIME);
+                }
             }
-
-            if ((timeout != NULL) && chrono::steady_clock::now() > limit) {
-                throw runtime_error("Error");
+            else
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(cleanerTime * 1000)));
             }
         }
-    } else {
-        while (retval == nullptr) {
-            try {
-                for (int i = 0; i < packetBuffer.size(); i++) {
-                    if (message->validateMessageQuery(packetBuffer[i])) {
-                        *retval = packetBuffer[i];
-                        packetBuffer.erase(packetBuffer.begin() + i);
-                        break;
-                    }
-                }
-            } catch (exception e) {
-                
-            }
-
-            if ((timeout != NULL) && chrono::steady_clock::now() > limit) {
-                throw std::runtime_error("Error");
-            }
+        catch (exception &e)
+        {
+            cout << "Error in cleanerPacketThread: " << e.what() << endl;
         }
     }
-    return *retval;
+}
+
+void Socket::listenerPacketThread()
+{
+    cout << "Listening" << endl;
+
+    while (isListening)
+    {
+        std::vector<uint8_t> buffer(MAXLINE);
+        struct sockaddr_in cliaddr;
+        socklen_t len = sizeof(cliaddr);
+        try
+        {
+            int n = recvfrom(socket, buffer.data(), MAXLINE, 0, (struct sockaddr *)&cliaddr, &len);
+            if (n <= 0)
+            {
+                throw runtime_error("Failed to receive data");
+            }
+
+            Segment received = deserializeSegment(buffer.data(), n);
+
+            try
+            {
+                if (!isValidChecksum(received))
+                {
+                    throw exception();
+                }
+                Message newMessage(inet_ntoa(cliaddr.sin_addr), ntohs(cliaddr.sin_port), received);
+                {
+                    // Protecting packetBuffer with a lock
+                    std::lock_guard<std::mutex> lock(bufferMutex);
+                    packetBuffer.push_back(newMessage);
+                }
+            }
+            catch (const exception &e)
+            {
+                cout << "Bad packet: " << e.what() << "\n";
+            }
+        }
+        catch (const runtime_error &e)
+        {
+            cout << "Error in listenerPacketThread: " << e.what() << "\n";
+        }
+    }
+}
+
+void Socket::start()
+{
+    isListening = true;
+    listener = thread(&Socket::listenerPacketThread, this);
+    cleaner = thread(&Socket::cleanerPacketThread, this);
+}
+
+void Socket::stop()
+{
+    isListening = false;
+    listener.join();
+    cleaner.join();
+}
+
+Message Socket::listen(MessageFilter *filter, int timeout)
+{
+    Message *message;
+    auto start = std::chrono::steady_clock::now();
+    auto limit = (timeout > 0) ? start + std::chrono::seconds(timeout) : start;
+
+    while (true)
+    {
+        try
+        {
+            if (filter == nullptr)
+            {
+                std::lock_guard<std::mutex> lock(bufferMutex);
+                if (!packetBuffer.empty())
+                {
+                    message = &packetBuffer.front();
+                    packetBuffer.erase(packetBuffer.begin());
+                    return *message;
+                }
+            }
+            else
+            {
+                std::lock_guard<std::mutex> lock(bufferMutex);
+                for (auto it = packetBuffer.begin(); it != packetBuffer.end(); ++it)
+                {
+                    if (filter->validate(*it))
+                    {
+                        packetBuffer.erase(it);
+                        return *it;
+                    }
+                }
+            }
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error in listen: " << e.what() << "\n";
+        }
+
+        if (timeout > 0 && std::chrono::steady_clock::now() > limit)
+        {
+            throw TimeoutException("Operation timeout");
+        }
+    }
+}
+
+void Socket::sendSegment(Segment segment, string ip, uint16_t port)
+{
+    segment = updateChecksum(segment);
+    uint8_t *sending = new uint8_t[segment.payloadSize + 20];
+    serializeSegment(segment, sending);
+    struct sockaddr_in destaddr;
+
+    destaddr.sin_family = AF_INET;
+    destaddr.sin_port = htons(port);
+    destaddr.sin_addr.s_addr = inet_addr(ip.c_str());
+
+    sendto(socket, sending, segment.payloadSize + 20, MSG_CONFIRM, (const struct sockaddr *)&destaddr, sizeof(destaddr));
+    cout << "SENDED" << endl;
+}
+
+void Socket::close()
+{
+    ::close(socket);
+    stop();
 }

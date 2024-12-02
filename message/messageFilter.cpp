@@ -1,6 +1,6 @@
-#include "message/messageQuery.hpp"
+#include "messageFilter.hpp"
 
-MessageQuery::MessageQuery(string *ip, uint16_t *port, uint8_t *flags, uint32_t *seqNum, uint32_t *ackNum, uint8_t *payload, size_t payloadSize)
+MessageFilter::MessageFilter(string *ip, uint16_t *port, uint8_t *flags, uint32_t *seqNum, uint32_t *ackNum, uint8_t *payload, size_t payloadSize)
 {
     this->ip = ip;
     this->port = port;
@@ -11,7 +11,7 @@ MessageQuery::MessageQuery(string *ip, uint16_t *port, uint8_t *flags, uint32_t 
     this->payloadSize = payloadSize;
 }
 
-MessageQuery::~MessageQuery()
+MessageFilter::~MessageFilter()
 {
     delete ip;
     delete port;
@@ -21,42 +21,42 @@ MessageQuery::~MessageQuery()
     delete[] payload;
 }
 
-MessageQuery MessageQuery::ipNPortQuery(string *ip, uint16_t *port)
+MessageFilter MessageFilter::ipNPortQuery(string *ip, uint16_t *port)
 {
-    return MessageQuery(ip, port, nullptr, nullptr, nullptr, nullptr, 0);
+    return MessageFilter(ip, port, nullptr, nullptr, nullptr, nullptr, 0);
 }
 
-MessageQuery MessageQuery::ipNPortNSeqNumQuery(string *ip, uint16_t *port, uint32_t *seqNum)
+MessageFilter MessageFilter::ipNPortNSeqNumQuery(string *ip, uint16_t *port, uint32_t *seqNum)
 {
-    return MessageQuery(ip, port, nullptr, seqNum, nullptr, nullptr, 0);
+    return MessageFilter(ip, port, nullptr, seqNum, nullptr, nullptr, 0);
 }
 
-MessageQuery MessageQuery::ipNPortNFlagsQuery(string *ip, uint16_t *port, uint8_t *flags)
+MessageFilter MessageFilter::ipNPortNFlagsQuery(string *ip, uint16_t *port, uint8_t *flags)
 {
-    return MessageQuery(ip, port, flags, nullptr, nullptr, nullptr, 0);
+    return MessageFilter(ip, port, flags, nullptr, nullptr, nullptr, 0);
 }
 
-MessageQuery MessageQuery::ipNPortNAckNumQuery(string *ip, uint16_t *port, uint32_t *ackNum)
+MessageFilter MessageFilter::ipNPortNAckNumQuery(string *ip, uint16_t *port, uint32_t *ackNum)
 {
-    return MessageQuery(ip, port, nullptr, nullptr, ackNum, nullptr, 0);
+    return MessageFilter(ip, port, nullptr, nullptr, ackNum, nullptr, 0);
 }
 
-MessageQuery MessageQuery::flagsQuery(uint8_t *flags)
+MessageFilter MessageFilter::flagsQuery(uint8_t *flags)
 {
-    return MessageQuery(nullptr, nullptr, flags, nullptr, nullptr, nullptr, 0);
+    return MessageFilter(nullptr, nullptr, flags, nullptr, nullptr, nullptr, 0);
 }
 
-MessageQuery MessageQuery::ipNPortNAckNumNFlagsQuery(string *ip, uint16_t *port, uint32_t *ackNum, uint8_t *flags)
+MessageFilter MessageFilter::ipNPortNAckNumNFlagsQuery(string *ip, uint16_t *port, uint32_t *ackNum, uint8_t *flags)
 {
-    return MessageQuery(ip, port, flags, nullptr, ackNum, nullptr, 0);
+    return MessageFilter(ip, port, flags, nullptr, ackNum, nullptr, 0);
 }
 
-MessageQuery MessageQuery::payloadsQuery(uint8_t *payload, size_t payloadSize)
+MessageFilter MessageFilter::payloadsQuery(uint8_t *payload, size_t payloadSize)
 {
-    return MessageQuery(nullptr, nullptr, nullptr, nullptr, nullptr, payload, payloadSize);
+    return MessageFilter(nullptr, nullptr, nullptr, nullptr, nullptr, payload, payloadSize);
 }
 
-bool MessageQuery::validateMessageQuery(Message message)
+bool MessageFilter::validate(Message message)
 {
     if (ip && *ip != message.ip)
         return false;
