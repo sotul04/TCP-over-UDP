@@ -7,16 +7,17 @@
 
 using namespace std;
 
-class Message {
-    public:
-        string ipAddress;
-        uint16_t port;
-        Segment segment;
+class Message
+{
+public:
+    string ip;
+    uint16_t port;
+    Segment segment;
 
-        Message(string ipAddress="0.0.0.0", uint16_t port=80, Segment segment={});
-        ~Message();
+    Message(string ip, uint16_t port, Segment segment);
+    ~Message();
 
-        bool operator==(const Message &message) const;
+    bool operator==(const Message &message) const;
 };
 
 #endif
