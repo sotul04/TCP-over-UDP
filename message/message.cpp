@@ -11,7 +11,7 @@ Message::Message(const Message& other)
 {
     this->ip= other.ip;
     this->port = other.port;
-    this->segment = other.segment;
+    this->segment = copySegment(other.segment);
 }
 
 Message::~Message() {

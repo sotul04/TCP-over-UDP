@@ -13,12 +13,19 @@ Socket::Socket(const string ip, const int16_t &port)
     }
 
     // binding
-    struct sockaddr_in sock_addr = {};
-    sock_addr.sin_family = AF_INET;
-    sock_addr.sin_addr.s_addr = inet_addr(ip.c_str());
-    sock_addr.sin_port = htons(port);
+    struct sockaddr_in this_addr;
+    memset(&this_addr, 0, sizeof(this_addr));
+    this_addr.sin_family = AF_INET;
+    this_addr.sin_addr.s_addr = inet_addr(ip.c_str());
+    this_addr.sin_port = htons(port);
 
-    if (bind(socket, (const struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0)
+    // const char *message = "Hello, this is a broadcast message!";
+    // sendto(socket, message, strlen(message), 0, (struct sockaddr *)&this_addr, sizeof(this_addr));
+
+    // cout << "Sending first message" << endl;
+
+
+    if (bind(socket, (const struct sockaddr *)&this_addr, sizeof(this_addr)) < 0)
     {
         perror("Bind failed");
         exit(EXIT_FAILURE);
@@ -37,6 +44,10 @@ Socket::~Socket()
 {
     delete segmentHandler;
     packetBuffer.clear();
+    if (socket >= 0)
+    {
+        ::close(socket); // Ensure socket is closed properly
+    }
 }
 
 void Socket::setCleanerTime(float time)
@@ -51,38 +62,49 @@ void Socket::clearPacketBuffer()
 
 void Socket::cleanerPacketThread()
 {
+    cout << "CLEANING" << endl;
     while (isListening)
     {
         try
         {
+            std::unique_lock<std::mutex> lock(bufferMutex);
+
             if (!packetBuffer.empty())
             {
+                // Make a copy of the first message
                 Message firstMessage = packetBuffer.front();
 
+                // Wait for specified time while allowing other threads to access buffer
+                lock.unlock();
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(cleanerTime * 1000)));
+                lock.lock();
 
+                // Check if the message is still there and matches
                 if (!packetBuffer.empty() && packetBuffer.front() == firstMessage)
                 {
+                    cout << "Erasing packet" << endl;
                     packetBuffer.erase(packetBuffer.begin());
                 }
 
+                // Adjust cleaner time
                 if (packetBuffer.size() > CLEANER_LIMIT)
                 {
-                    setCleanerTime(MIN_CLEANER_TIME);
+                    cleanerTime = MIN_CLEANER_TIME;
                 }
                 else
                 {
-                    setCleanerTime(CLEANER_TIME);
+                    cleanerTime = CLEANER_TIME;
                 }
             }
             else
             {
+                lock.unlock();
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(cleanerTime * 1000)));
             }
         }
-        catch (exception &e)
+        catch (const std::exception &e)
         {
-            cout << "Error in cleanerPacketThread: " << e.what() << endl;
+            std::cerr << "Error in cleanerPacketThread: " << e.what() << std::endl;
         }
     }
 }
@@ -93,40 +115,42 @@ void Socket::listenerPacketThread()
 
     while (isListening)
     {
-        std::vector<uint8_t> buffer(MAXLINE);
-        struct sockaddr_in cliaddr;
-        socklen_t len = sizeof(cliaddr);
         try
         {
+            std::vector<uint8_t> buffer(MAXLINE);
+            struct sockaddr_in cliaddr;
+            socklen_t len = sizeof(cliaddr);
+
             int n = recvfrom(socket, buffer.data(), MAXLINE, 0, (struct sockaddr *)&cliaddr, &len);
             if (n <= 0)
             {
-                throw runtime_error("Failed to receive data");
+                if (!isListening)
+                    break; // Clean exit if we're stopping
+                continue;  // Skip this iteration if error
             }
 
             Segment received = deserializeSegment(buffer.data(), n);
 
-            try
+            if (!isValidChecksum(received))
             {
-                if (!isValidChecksum(received))
-                {
-                    throw exception();
-                }
-                Message newMessage(inet_ntoa(cliaddr.sin_addr), ntohs(cliaddr.sin_port), received);
-                {
-                    // Protecting packetBuffer with a lock
-                    std::lock_guard<std::mutex> lock(bufferMutex);
-                    packetBuffer.push_back(newMessage);
-                }
+                continue; // Skip invalid packets
             }
-            catch (const exception &e)
+
+            Message newMessage(inet_ntoa(cliaddr.sin_addr), ntohs(cliaddr.sin_port), received);
+
             {
-                cout << "Bad packet: " << e.what() << "\n";
+                cout << "Get new segment" << endl;
+                std::lock_guard<std::mutex> lock(bufferMutex);
+                packetBuffer.push_back(std::move(newMessage));
+                bufferCV.notify_one(); // Notify waiting threads
             }
         }
-        catch (const runtime_error &e)
+        catch (const std::exception &e)
         {
-            cout << "Error in listenerPacketThread: " << e.what() << "\n";
+            if (isListening)
+            {
+                std::cerr << "Error in listenerPacketThread: " << e.what() << "\n";
+            }
         }
     }
 }
@@ -134,79 +158,123 @@ void Socket::listenerPacketThread()
 void Socket::start()
 {
     isListening = true;
-    listener = thread(&Socket::listenerPacketThread, this);
-    cleaner = thread(&Socket::cleanerPacketThread, this);
+    listener = std::thread(&Socket::listenerPacketThread, this);
+    cleaner = std::thread(&Socket::cleanerPacketThread, this);
 }
 
 void Socket::stop()
 {
     isListening = false;
-    listener.join();
-    cleaner.join();
+
+    // Close socket to interrupt recvfrom
+    if (socket >= 0)
+    {
+        ::close(socket);
+        socket = -1;
+    }
+
+    // Wait for threads to finish
+    if (listener.joinable())
+        listener.join();
+    if (cleaner.joinable())
+        cleaner.join();
+
+    // Clear the buffer
+    std::lock_guard<std::mutex> lock(bufferMutex);
+    packetBuffer.clear();
 }
 
 Message Socket::listen(MessageFilter *filter, int timeout)
 {
-    Message *message;
     auto start = std::chrono::steady_clock::now();
     auto limit = (timeout > 0) ? start + std::chrono::seconds(timeout) : start;
 
-    while (true)
+    while (isListening)
     {
         try
         {
-            if (filter == nullptr)
+            std::unique_lock<std::mutex> lock(bufferMutex);
+
+            // Wait for data with timeout
+            auto waitResult = bufferCV.wait_for(lock,
+                                                std::chrono::milliseconds(100),
+                                                [this]()
+                                                { return !packetBuffer.empty(); });
+
+            if (waitResult) // If we have data
             {
-                std::lock_guard<std::mutex> lock(bufferMutex);
-                if (!packetBuffer.empty())
+                if (filter == nullptr)
                 {
-                    message = &packetBuffer.front();
-                    packetBuffer.erase(packetBuffer.begin());
-                    return *message;
-                }
-            }
-            else
-            {
-                std::lock_guard<std::mutex> lock(bufferMutex);
-                for (auto it = packetBuffer.begin(); it != packetBuffer.end(); ++it)
-                {
-                    if (filter->validate(*it))
+                    if (!packetBuffer.empty())
                     {
-                        packetBuffer.erase(it);
-                        return *it;
+                        Message message = packetBuffer.front();
+                        packetBuffer.erase(packetBuffer.begin());
+                        return message;
+                    }
+                }
+                else
+                {
+                    for (size_t i = 0; i < packetBuffer.size(); ++i)
+                    {
+                        if (filter->validate(packetBuffer[i]))
+                        {
+                            Message message = packetBuffer[i];
+                            packetBuffer.erase(packetBuffer.begin() + i);
+                            return message;
+                        }
                     }
                 }
             }
+
+            // Check timeout
+            if (timeout > 0 && std::chrono::steady_clock::now() > limit)
+            {
+                cout << "Timeout" << endl;
+                throw TimeoutException("Operation timeout");
+            }
+        }
+        catch (const TimeoutException & te)
+        {
+            cout << "Throwing Timeout" << endl;
+            throw TimeoutException("Timeout operation"); 
         }
         catch (const std::exception &e)
         {
             std::cerr << "Error in listen: " << e.what() << "\n";
         }
-
-        if (timeout > 0 && std::chrono::steady_clock::now() > limit)
-        {
-            throw TimeoutException("Operation timeout");
-        }
     }
+    throw exception();
 }
 
 void Socket::sendSegment(Segment segment, string ip, uint16_t port)
 {
     segment = updateChecksum(segment);
-    uint8_t *sending = new uint8_t[segment.payloadSize + 20];
-    serializeSegment(segment, sending);
-    struct sockaddr_in destaddr;
 
+    // Use a vector to handle memory more safely
+    std::vector<uint8_t> sending(segment.payloadSize + 20);
+    serializeSegment(segment, sending.data());
+
+    struct sockaddr_in destaddr;
     destaddr.sin_family = AF_INET;
     destaddr.sin_port = htons(port);
     destaddr.sin_addr.s_addr = inet_addr(ip.c_str());
 
-    sendto(socket, sending, segment.payloadSize + 20, MSG_CONFIRM, (const struct sockaddr *)&destaddr, sizeof(destaddr));
-    cout << "SENDED" << endl;
+    if (sendto(socket, sending.data(), sending.size(), 0, (const struct sockaddr *)&destaddr, sizeof(destaddr)) <= 0)
+    {
+        perror("Send failed");
+    }
+    else
+    {
+        cout << "SENDED" << endl;
+    }
 }
 
 void Socket::close()
 {
-    ::close(socket);
+    if (socket >= 0)
+    {
+        ::close(socket);
+        socket = -1; // Mark the socket as closed
+    }
     stop();
 }

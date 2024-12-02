@@ -1,62 +1,58 @@
 #include "messageFilter.hpp"
+#include <cstring>
 
-MessageFilter::MessageFilter(string *ip, uint16_t *port, uint8_t *flags, uint32_t *seqNum, uint32_t *ackNum, uint8_t *payload, size_t payloadSize)
-{
-    this->ip = ip;
-    this->port = port;
-    this->flags = flags;
-    this->seqNum = seqNum;
-    this->ackNum = ackNum;
-    this->payload = payload;
-    this->payloadSize = payloadSize;
-}
+MessageFilter::MessageFilter(
+    const std::optional<std::string> &ip,
+    const std::optional<uint16_t> &port,
+    const std::optional<uint8_t> &flags,
+    const std::optional<uint32_t> &seqNum,
+    const std::optional<uint32_t> &ackNum,
+    uint8_t *payload,
+    size_t payloadSize) : ip(ip), port(port), flags(flags), seqNum(seqNum), ackNum(ackNum), payload(payload), payloadSize(payloadSize) {}
 
 MessageFilter::~MessageFilter()
 {
-    delete ip;
-    delete port;
-    delete flags;
-    delete seqNum;
-    delete ackNum;
     delete[] payload;
 }
 
-MessageFilter MessageFilter::ipNPortQuery(string *ip, uint16_t *port)
+MessageFilter MessageFilter::ipNPortQuery(const std::string &ip, uint16_t port)
 {
-    return MessageFilter(ip, port, nullptr, nullptr, nullptr, nullptr, 0);
+    return MessageFilter(ip, port, std::nullopt, std::nullopt, std::nullopt, nullptr, 0);
 }
 
-MessageFilter MessageFilter::ipNPortNSeqNumQuery(string *ip, uint16_t *port, uint32_t *seqNum)
+MessageFilter MessageFilter::ipNPortNSeqNumQuery(const std::string &ip, uint16_t port, uint32_t seqNum)
 {
-    return MessageFilter(ip, port, nullptr, seqNum, nullptr, nullptr, 0);
+    return MessageFilter(ip, port, std::nullopt, seqNum, std::nullopt, nullptr, 0);
 }
 
-MessageFilter MessageFilter::ipNPortNFlagsQuery(string *ip, uint16_t *port, uint8_t *flags)
+MessageFilter MessageFilter::ipNPortNFlagsQuery(const std::string &ip, uint16_t port, uint8_t flags)
 {
-    return MessageFilter(ip, port, flags, nullptr, nullptr, nullptr, 0);
+    return MessageFilter(ip, port, flags, std::nullopt, std::nullopt, nullptr, 0);
 }
 
-MessageFilter MessageFilter::ipNPortNAckNumQuery(string *ip, uint16_t *port, uint32_t *ackNum)
+MessageFilter MessageFilter::ipNPortNAckNumQuery(const std::string &ip, uint16_t port, uint32_t ackNum)
 {
-    return MessageFilter(ip, port, nullptr, nullptr, ackNum, nullptr, 0);
+    return MessageFilter(ip, port, std::nullopt, std::nullopt, ackNum, nullptr, 0);
 }
 
-MessageFilter MessageFilter::flagsQuery(uint8_t *flags)
+MessageFilter MessageFilter::flagsQuery(uint8_t flags)
 {
-    return MessageFilter(nullptr, nullptr, flags, nullptr, nullptr, nullptr, 0);
+    return MessageFilter(std::nullopt, std::nullopt, flags, std::nullopt, std::nullopt, nullptr, 0);
 }
 
-MessageFilter MessageFilter::ipNPortNAckNumNFlagsQuery(string *ip, uint16_t *port, uint32_t *ackNum, uint8_t *flags)
+MessageFilter MessageFilter::ipNPortNAckNumNFlagsQuery(const std::string &ip, uint16_t port, uint32_t ackNum, uint8_t flags)
 {
-    return MessageFilter(ip, port, flags, nullptr, ackNum, nullptr, 0);
+    return MessageFilter(ip, port, flags, std::nullopt, ackNum, nullptr, 0);
 }
 
 MessageFilter MessageFilter::payloadsQuery(uint8_t *payload, size_t payloadSize)
 {
-    return MessageFilter(nullptr, nullptr, nullptr, nullptr, nullptr, payload, payloadSize);
+    uint8_t *copiedPayload = new uint8_t[payloadSize];
+    std::memcpy(copiedPayload, payload, payloadSize);
+    return MessageFilter(std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt, copiedPayload, payloadSize);
 }
 
-bool MessageFilter::validate(Message message)
+bool MessageFilter::validate(const Message &message)
 {
     if (ip && *ip != message.ip)
         return false;
@@ -94,7 +90,7 @@ bool MessageFilter::validate(Message message)
         if (payloadSize != messagePayloadSize)
             return false;
 
-        if (memcmp(payload, messagePayload, payloadSize) != 0)
+        if (std::memcmp(payload, messagePayload, payloadSize) != 0)
             return false;
     }
 

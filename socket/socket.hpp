@@ -75,6 +75,7 @@ protected:
     thread cleaner;
 
     std::mutex bufferMutex;
+    std::condition_variable bufferCV;
 
 public:
     Socket(const string ip, const int16_t &port);

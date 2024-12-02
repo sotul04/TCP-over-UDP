@@ -69,6 +69,7 @@ SegmentHandler::~SegmentHandler()
 {
     for (Segment &segment : segmentBuffer)
     {
+        cout << "Deleting payload" << endl;
         delete[] segment.payload;
     }
 }

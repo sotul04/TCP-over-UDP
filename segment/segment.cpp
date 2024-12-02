@@ -181,6 +181,38 @@ bool operator==(const Segment &lhs, const Segment &rhs)
            memcmp(lhs.payload, rhs.payload, lhs.payloadSize) == 0;
 }
 
+Segment copySegment(const Segment &source)
+{
+    // Create a new segment
+    Segment copy = {};
+
+    // Copy all the scalar members
+    copy.sourcePort = source.sourcePort;
+    copy.destPort = source.destPort;
+    copy.seqNum = source.seqNum;
+    copy.ackNum = source.ackNum;
+    copy.data_offset = source.data_offset;
+    copy.reserved = source.reserved;
+    copy.flags = source.flags;
+    copy.window = source.window;
+    copy.checksum = source.checksum;
+    copy.urgentPointer = source.urgentPointer;
+    copy.payloadSize = source.payloadSize;
+
+    // Allocate new memory for the payload and copy the content
+    if (source.payload != nullptr && source.payloadSize > 0)
+    {
+        copy.payload = new uint8_t[source.payloadSize];
+        std::memcpy(copy.payload, source.payload, source.payloadSize);
+    }
+    else
+    {
+        copy.payload = nullptr;
+    }
+
+    return copy;
+}
+
 void serializeSegment(const Segment &segment, uint8_t *buffer)
 {
     memcpy(buffer, &segment.sourcePort, sizeof(segment.sourcePort));

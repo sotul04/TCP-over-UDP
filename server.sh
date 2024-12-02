@@ -1,1 +1,1 @@
-g++ -o server server.cpp segment/segment.cpp segment/segment_handler.cpp segment/serialize.cpp
+g++ -o server server.cpp segment/segment.cpp segment/segment_handler.cpp

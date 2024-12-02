@@ -12,8 +12,6 @@ public:
 
     void run() {
         connection->start();
-        uint8_t hello[] = "Hello from me";
-
         Connection status = connection->reqHandShake(destIP, destPort);
         cout << status.cont << endl;
         connection->stop();

@@ -1,83 +1,101 @@
 #include "TCPSocket.hpp"
 #include "../random/random.hpp"
 
+// Request Handshake (Client-side)
 Connection TCPSocket::reqHandShake(string destIP, uint16_t destPort)
 {
     uint32_t seqNum = randomNumber();
 
-    int retries = RETRIES;
-    while (retries > 0)
+    for (int retries = RETRIES; retries > 0; --retries)
     {
         try
         {
-            sendSegment(syn(seqNum), ip, port);
-            cout << "Sending SYN request to " << destIP << ":" << destPort << " Seq=" << seqNum << endl;
+            cout << "Retry #" << (RETRIES - retries + 1) << ": Sending SYN to " << destIP << ":" << destPort << endl;
 
-            uint8_t finackflag = FIN_ACK_FLAG;
-            MessageFilter filter = MessageFilter::ipNPortNFlagsQuery(&destIP, &destPort, &finackflag);
-            Message message = listen(&filter, HANDSHAKE_TIMEOUT);
+            // Send SYN
+            sendSegment(syn(seqNum), destIP, destPort);
+            cout << "SYN sent: Seq=" << seqNum << endl;
 
-            cout << "Accepted SYN-ACK from " << message.ip << ":" << message.port << " Seq=" << message.segment.seqNum << " Ack=" << message.segment.ackNum << endl;
+            // Wait for SYN-ACK
+            uint8_t synAckFlag = SYN_ACK_FLAG;
+            MessageFilter filter = MessageFilter::ipNPortNFlagsQuery(destIP, destPort, synAckFlag);
+            Message synAckMessage = listen(&filter, HANDSHAKE_TIMEOUT);
 
-            uint32_t ackNum = message.segment.seqNum + 1;
+            cout << "SYN-ACK received: From " << synAckMessage.ip << ":" << synAckMessage.port
+                 << " Seq=" << synAckMessage.segment.seqNum
+                 << " Ack=" << synAckMessage.segment.ackNum << endl;
+
+            // Send ACK
+            uint32_t ackNum = synAckMessage.segment.seqNum + 1;
             seqNum++;
+            sendSegment(ack(seqNum, ackNum), destIP, destPort);
+            cout << "ACK sent: Seq=" << seqNum << " Ack=" << ackNum << endl;
 
-            sendSegment(ack(seqNum, ackNum), message.ip, message.port);
-            cout << "Sending ACK to " << message.ip << ":" << message.port << " Seq=" << seqNum << " Ack=" << ackNum << endl;
-
-            return Connection(true, message.ip, message.port, seqNum, ackNum);
+            return Connection(true, destIP, destPort, seqNum, ackNum);
         }
         catch (const TimeoutException &te)
         {
-            cout << "Handshake timeout" << endl;
-            retries--;
+            cout << "Timeout waiting for SYN-ACK. Retrying..." << endl;
+        }
+        catch (const std::exception &e)
+        {
+            cerr << "Error during handshake: " << e.what() << endl;
         }
     }
 
+    cout << "Handshake failed after " << RETRIES << " retries." << endl;
     return Connection(false, destIP, destPort, 0, 0);
 }
 
-Connection TCPSocket::accHandShake(string destIP = "", uint16_t destPort = 0)
+// Accept Handshake (Server-side)
+Connection TCPSocket::accHandShake(string destIP, uint16_t destPort)
 {
-    Message *synMessage = nullptr;
     uint32_t seqNum = randomNumber();
-    uint8_t synflag = SYN_FLAG;
-    if (destIP == "" && destPort == 0)
+
+    for (int retries = RETRIES; retries > 0; --retries)
     {
-        MessageFilter filter = MessageFilter::flagsQuery(&synflag);
-        Message listened = listen(&filter, HANDSHAKE_TIMEOUT); 
-        synMessage = &listened;
-    }
-    else
-    {
-        MessageFilter filter = MessageFilter::ipNPortNFlagsQuery(&destIP, &destPort, &synflag);
-        Message listened = listen(&filter, HANDSHAKE_TIMEOUT); 
-        synMessage = &listened;
-    }
+        try
+        {
+            cout << "Listening for SYN..." << endl;
 
-    cout << "Receive SYN from " << synMessage->ip << ":" << synMessage->port << " Seq=" << synMessage->segment.seqNum << endl;
+            // Wait for SYN
+            uint8_t synFlag = SYN_FLAG;
+            MessageFilter filter = (destIP.empty() && destPort == 0)
+                                       ? MessageFilter::flagsQuery(synFlag)
+                                       : MessageFilter::ipNPortNFlagsQuery(destIP, destPort, synFlag);
 
-    uint32_t ackNum = synMessage->segment.seqNum + 1;
+            Message synMessage = listen(&filter, HANDSHAKE_TIMEOUT);
+            cout << "SYN received: From " << synMessage.ip << ":" << synMessage.port
+                 << " Seq=" << synMessage.segment.seqNum << endl;
 
-    sendSegment(synAck(seqNum, ackNum), synMessage->ip, synMessage->port);
+            // Send SYN-ACK
+            uint32_t ackNum = synMessage.segment.seqNum + 1;
+            sendSegment(synAck(seqNum, ackNum), synMessage.ip, synMessage.port);
+            cout << "SYN-ACK sent: Seq=" << seqNum << " Ack=" << ackNum << endl;
 
-    int retries = RETRIES;
-    while (retries > 0)
-    {
-        try {
-            uint8_t ackflag = ACK_FLAG;
+            // Wait for ACK
+            uint8_t ackFlag = ACK_FLAG;
             uint32_t seqNumAck = seqNum + 1;
-            MessageFilter filter = MessageFilter::ipNPortNAckNumNFlagsQuery(&synMessage->ip, &synMessage->port, &seqNumAck, &ackflag);
-            Message ackMessage = listen(&filter, HANDSHAKE_TIMEOUT);
-            cout << "Receive ACK from " << ackMessage.ip << ":" << ackMessage.port << " Ack=" << ackMessage.segment.ackNum << endl;
+            MessageFilter ackFilter = MessageFilter::ipNPortNAckNumNFlagsQuery(
+                synMessage.ip, synMessage.port, seqNumAck, ackFlag);
+
+            Message ackMessage = listen(&ackFilter, HANDSHAKE_TIMEOUT);
+            cout << "ACK received: From " << ackMessage.ip << ":" << ackMessage.port
+                 << " Seq=" << ackMessage.segment.seqNum
+                 << " Ack=" << ackMessage.segment.ackNum << endl;
 
             return Connection(true, ackMessage.ip, ackMessage.port, ackMessage.segment.ackNum, ackMessage.segment.seqNum + 1);
-        } catch (const TimeoutException &te) {
-            cout << "ACK timeout from " << synMessage->ip << ":" << synMessage->port << endl;
-            retries--;
+        }
+        catch (const TimeoutException &te)
+        {
+            cout << "Timeout waiting for handshake completion. Retrying..." << endl;
+        }
+        catch (const std::exception &e)
+        {
+            cerr << "Error during handshake: " << e.what() << endl;
         }
     }
 
-    delete synMessage;
+    cout << "Handshake failed after " << RETRIES << " retries." << endl;
     return Connection(false, destIP, destPort, 0, 0);
 }

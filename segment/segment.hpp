@@ -87,6 +87,8 @@ void printSegment(const Segment &segment);
 
 bool operator==(const Segment &lhs, const Segment &rhs);
 
+Segment copySegment(const Segment &source);
+
 void serializeSegment(const Segment &segment, uint8_t *buffer);
 Segment deserializeSegment(const uint8_t *buffer, uint32_t length);
 
