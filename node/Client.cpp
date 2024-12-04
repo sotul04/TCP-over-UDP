@@ -17,10 +17,14 @@ public:
         cout << "Trying to contact the sender at " << destIP << ":" << destPort << endl;
         Connection cont =  connection->seekBroadcast(destIP, destPort);
 
-        cout << "STARTING HANDSHAKE" << endl;
-
         Connection status = connection->reqHandShake(cont.ip, cont.port);
         cout << status.cont << endl;
+        if (status.cont) {
+            pair<vector<Segment>, Connection> result = connection->receiveData(status.ip, status.port, status.seqNum);
+            // connection->accClosing(status.ip, status.port, status.seqNum);
+            connection->accClosing(result.second.ip, result.second.port, result.second.seqNum);
+            cout << "ENDED" << endl;
+        }
         connection->close();
     }
 
@@ -30,6 +34,6 @@ public:
 };
 
 int main() {
-    Client client("127.0.0.1", 9090, "127.0.0.1", 8080);
+    Client client("127.0.0.1", 9090, "255.255.255.255", 8080);
     client.run();
 }

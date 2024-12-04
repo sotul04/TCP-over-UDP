@@ -16,6 +16,7 @@ public:
 
     Message(string ip, uint16_t port, Segment segment);
     Message(const Message&);
+    Message& operator=(Message&& other) noexcept;
     ~Message();
 
     bool operator==(const Message &message) const;

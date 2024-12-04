@@ -6,6 +6,7 @@
 #include <string>
 #include <iomanip>
 #include <cstring>
+#include <utility>
 using namespace std;
 
 struct Segment
@@ -46,6 +47,7 @@ const uint8_t SYN_FLAG = 2;
 const uint8_t ACK_FLAG = 16;
 const uint8_t SYN_ACK_FLAG = SYN_FLAG | ACK_FLAG;
 const uint8_t FIN_ACK_FLAG = FIN_FLAG | ACK_FLAG;
+const uint8_t FIN_PSH_FLAG = 1 | 8;
 
 /**
  * Generate Segment that contain SYN packet
@@ -55,7 +57,7 @@ Segment syn(uint32_t seqNum);
 /**
  * Generate Segment that contain ACK packet
  */
-Segment ack(uint32_t seqNum, uint32_t ackNum);
+Segment ack(uint32_t ackNum);
 
 /**
  * Generate Segment that contain SYN-ACK packet
@@ -65,12 +67,12 @@ Segment synAck(uint32_t seqNum, uint32_t ackNum);
 /**
  * Generate Segment that contain FIN packet
  */
-Segment fin();
+Segment fin(uint32_t seqNum);
 
 /**
  * Generate Segment that contain FIN-ACK packet
  */
-Segment finAck();
+Segment finAck(uint32_t seqNum, uint32_t ackNum);
 
 // update return type as needed
 uint16_t calculateChecksum(Segment segment);
@@ -91,9 +93,12 @@ bool operator==(const Segment &lhs, const Segment &rhs);
 
 Segment copySegment(const Segment &source);
 
+// segment pack & unpack
 void serializeSegment(const Segment &segment, uint8_t *buffer);
 Segment deserializeSegment(const uint8_t *buffer, uint32_t length);
 
 Segment makeSegment(const string &data, uint16_t sport, uint16_t dport);
+
+pair<string, string> extractMetada(const Segment &segment);
 
 #endif

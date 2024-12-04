@@ -16,6 +16,7 @@
 #include <chrono>
 #include <thread>
 #include <mutex>
+#include <map>
 #include "../segment/segment.hpp"
 #include "../segment/segment_handler.hpp"
 #include "../message/message.hpp"
@@ -23,9 +24,9 @@
 #include "../config/Config.hpp"
 #include "Timeout.hpp"
 
-#define MAXPACKETBUFFERSIZE 1500
-#define DEFAULTCOLLECTINGTIME 10
-#define MINCOLLECTINGTIME 1
+#define IN "[+] "
+#define OUT "[i] "
+#define INPUT "[?] "
 
 using namespace std;
 
@@ -45,6 +46,20 @@ enum TCPStatusEnum
     LAST_ACK = 8,
     TIME_WAIT = 9,
     CLOSED = 10,
+};
+
+const std::map<TCPStatusEnum, std::string> StatusMap = {
+    {LISTEN, "LISTEN"},
+    {SYN_SENT, "SYN_SENT"},
+    {SYN_RECEIVED, "SYN_RECEIVED"},
+    {ESTABLISHED, "ESTABLISHED"},
+    {FIN_WAIT_1, "FIN_WAIT_1"},
+    {FIN_WAIT_2, "FIN_WAIT_2"},
+    {CLOSE_WAIT, "CLOSE_WAIT"},
+    {CLOSING, "CLOSING"},
+    {LAST_ACK, "LAST_ACK"},
+    {TIME_WAIT, "TIME_WAIT"},
+    {CLOSED, "CLOSED"}
 };
 
 class Socket
@@ -99,6 +114,8 @@ public:
     Message listen(MessageFilter*, int);
 
     void sendSegment(Segment, string, uint16_t);
+    string logStatus();
+    void setStatus(TCPStatusEnum stat);
 };
 
 #endif

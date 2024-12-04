@@ -11,10 +11,9 @@ Segment syn(uint32_t seqNum)
     return segment;
 }
 
-Segment ack(uint32_t seqNum, uint32_t ackNum)
+Segment ack(uint32_t ackNum)
 {
     Segment segment = {};
-    segment.seqNum = seqNum;
     segment.ackNum = ackNum;
     segment.flags.ack = 1;
     segment.data_offset = 5;
@@ -36,9 +35,10 @@ Segment synAck(uint32_t seqNum, uint32_t ackNum)
     return segment;
 }
 
-Segment fin()
+Segment fin(uint32_t seqNum)
 {
     Segment segment = {};
+    segment.seqNum = seqNum;
     segment.flags.fin = 1;
     segment.data_offset = 5;
     segment.payload = nullptr;
@@ -46,9 +46,11 @@ Segment fin()
     return segment;
 }
 
-Segment finAck()
+Segment finAck(uint32_t seqNum, uint32_t ackNum)
 {
     Segment segment = {};
+    segment.seqNum = seqNum;
+    segment.ackNum = ackNum;
     segment.flags.fin = 1;
     segment.flags.ack = 1;
     segment.data_offset = 5;
@@ -273,4 +275,24 @@ Segment makeSegment(const std::string &data, uint16_t sport, uint16_t dport)
     segment.data_offset = 5;
 
     return segment;
+}
+
+pair<string, string> extractMetada(const Segment &segment)
+{
+    if (segment.payload == nullptr || segment.payloadSize == 0)
+    {
+        return {"", ""};
+    }
+
+    string payloadData(reinterpret_cast<char *>(segment.payload), segment.payloadSize);
+
+    size_t dotPos = payloadData.rfind('.');
+    if (dotPos == string::npos)
+    {
+        return {payloadData, ""};
+    }
+
+    string fileName = payloadData.substr(0, dotPos);
+    string fileExtension = payloadData.substr(dotPos + 1);
+    return {fileName, fileExtension};
 }

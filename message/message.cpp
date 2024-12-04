@@ -14,6 +14,18 @@ Message::Message(const Message& other)
     this->segment = copySegment(other.segment);
 }
 
+Message &Message::operator=(Message&& other) noexcept
+{
+    if (this != &other)
+    {
+        ip = std::move(other.ip);
+        port = std::move(other.port);
+        segment = std::move(other.segment);
+    }
+
+    return *this;
+}
+
 Message::~Message() {
     delete[] segment.payload;
 }

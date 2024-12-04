@@ -262,3 +262,13 @@ void Socket::close()
     }
     stop();
 }
+
+string Socket::logStatus()
+{
+    return "["+StatusMap.at(status)+"] ";
+}
+
+void Socket::setStatus(TCPStatusEnum stat)
+{
+    status = stat;
+}
