@@ -24,6 +24,9 @@ public:
             // connection->accClosing(status.ip, status.port, status.seqNum);
             connection->accClosing(result.second.ip, result.second.port, result.second.seqNum);
             cout << "ENDED" << endl;
+            string combined = combineAsString(result.first);
+            cout << combined.size() << endl;
+            cout << combined << endl;
         }
         connection->close();
     }

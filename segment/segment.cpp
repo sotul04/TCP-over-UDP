@@ -195,7 +195,14 @@ Segment copySegment(const Segment &source)
     copy.ackNum = source.ackNum;
     copy.data_offset = source.data_offset;
     copy.reserved = source.reserved;
-    copy.flags = source.flags;
+    copy.flags.cwr = source.flags.cwr;
+    copy.flags.ece = source.flags.ece;
+    copy.flags.urg = source.flags.urg;
+    copy.flags.ack = source.flags.ack;
+    copy.flags.psh = source.flags.psh;
+    copy.flags.rst = source.flags.rst;
+    copy.flags.syn = source.flags.syn;
+    copy.flags.fin = source.flags.fin;
     copy.window = source.window;
     copy.checksum = source.checksum;
     copy.urgentPointer = source.urgentPointer;
@@ -204,6 +211,7 @@ Segment copySegment(const Segment &source)
     // Allocate new memory for the payload and copy the content
     if (source.payload != nullptr && source.payloadSize > 0)
     {
+
         copy.payload = new uint8_t[source.payloadSize];
         std::memcpy(copy.payload, source.payload, source.payloadSize);
     }
@@ -295,4 +303,21 @@ pair<string, string> extractMetada(const Segment &segment)
     string fileName = payloadData.substr(0, dotPos);
     string fileExtension = payloadData.substr(dotPos + 1);
     return {fileName, fileExtension};
+}
+
+string combineAsString(const vector<Segment> &segments)
+{
+    string combined;
+    cout << "try to combined" << endl;
+
+    for (const auto& segment : segments)
+    {
+        if (segment.payload && segment.payloadSize > 0)
+        {
+            string temp(reinterpret_cast<char*>(segment.payload), segment.payloadSize);
+            combined.append(temp);
+        }
+    }
+
+    return combined;
 }

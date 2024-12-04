@@ -119,11 +119,11 @@ void Socket::listenerPacketThread()
     {
         try
         {
-            std::vector<uint8_t> buffer(MAXLINE);
+            uint8_t *buffer = new uint8_t[MAXLINE];
             struct sockaddr_in cliaddr;
             socklen_t len = sizeof(cliaddr);
 
-            int n = recvfrom(socket, buffer.data(), MAXLINE, 0, (struct sockaddr *)&cliaddr, &len);
+            int n = recvfrom(socket, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr *)&cliaddr, &len);
             if (n <= 0)
             {
                 if (!isListening)
@@ -131,7 +131,7 @@ void Socket::listenerPacketThread()
                 continue;
             }
 
-            Segment received = deserializeSegment(buffer.data(), n);
+            Segment received = deserializeSegment(buffer, n);
 
             if (!isValidChecksum(received))
             {
@@ -242,12 +242,12 @@ void Socket::sendSegment(Segment segment, string ip, uint16_t port)
 {
     segment = updateChecksum(segment);
 
-    std::vector<uint8_t> sending(segment.payloadSize + 20);
-    serializeSegment(segment, sending.data());
+    uint8_t* sending = new uint8_t[segment.payloadSize + 20];
+    serializeSegment(segment, sending);
 
     struct sockaddr_in destaddr = generateAddress(ip, port);
 
-    if (sendto(socket, sending.data(), sending.size(), 0, (const struct sockaddr *)&destaddr, sizeof(destaddr)) <= 0)
+    if (sendto(socket, sending, segment.payloadSize + 20, MSG_CONFIRM, (const struct sockaddr *)&destaddr, sizeof(destaddr)) <= 0)
     {
         perror("Send failed");
     }

@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <cstring>
 #include <utility>
+#include <vector>
 using namespace std;
 
 struct Segment
@@ -100,5 +101,7 @@ Segment deserializeSegment(const uint8_t *buffer, uint32_t length);
 Segment makeSegment(const string &data, uint16_t sport, uint16_t dport);
 
 pair<string, string> extractMetada(const Segment &segment);
+
+string combineAsString(const vector<Segment> &segments);
 
 #endif

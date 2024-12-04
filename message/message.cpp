@@ -4,7 +4,8 @@ Message::Message(string ip, uint16_t port, Segment segment)
 {
     this->ip = ip;
     this->port = port;
-    this->segment = segment;
+    this->segment = copySegment(segment);
+
 }
 
 Message::Message(const Message& other) 
@@ -20,7 +21,7 @@ Message &Message::operator=(Message&& other) noexcept
     {
         ip = std::move(other.ip);
         port = std::move(other.port);
-        segment = std::move(other.segment);
+        segment = copySegment(other.segment);
     }
 
     return *this;

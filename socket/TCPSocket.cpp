@@ -275,10 +275,11 @@ Connection TCPSocket::sendData(string destIP, uint16_t destPort, uint32_t seqNum
         while (LFS - LAR < SWS && LFS < seqNum + data.size() - 1)
         {
             // Validate index bounds
+            cout << LFS - seqNum + 1 << endl; 
             if ((LFS - seqNum + 1) >= 0)
             {
                 threads.push_back(thread(&TCPSocket::senderThread, this,
-                                         Message(destIP, destPort, data[LFS - seqNum + 1]),
+                                         Message(destIP, destPort, data.at(LFS - seqNum + 1)),
                                          std::ref(lastAck), std::ref(abort)));
                 cout << "[WINDOW] Sending frame " << LFS << endl;
                 LFS++;
@@ -341,12 +342,13 @@ pair<vector<Segment>, Connection> TCPSocket::receiveData(string destIP, uint16_t
                     cout << IN << logStatus() << "Received metada from " << message.ip << ":" << message.port << endl;
                     sendSegment(ack(message.segment.seqNum + 1), message.ip, message.port);
                     pair<string, string> metadata = extractMetada(message.segment);
+                    receivedSegments.push_back(copySegment(message.segment));
                     cout << "[METADATA] name: " << metadata.first << " extension: " << metadata.second << endl;
                     cout << OUT << logStatus() << "Sending ACK for metadata to " << message.ip << ":" << message.port << endl;
                     finished = true;
                     continue;
                 }
-                receivedSegments.push_back(message.segment);
+                receivedSegments.push_back(copySegment(message.segment));
                 cout << IN << logStatus() << "[Seq " << receivedSegments.size() << "] [S=" << message.segment.seqNum << "] from " << message.ip << ":" << message.port << " ACKed" << endl;
 
                 sendSegment(ack(targetSeqNum + 1), message.ip, message.port);
@@ -360,6 +362,8 @@ pair<vector<Segment>, Connection> TCPSocket::receiveData(string destIP, uint16_t
             cout << "[TIMEOUT] Waiting for segment [S=" << targetSeqNum << "] from " << destIP << ":" << destPort << endl;
         }
     }
+
+
 
     return {receivedSegments, Connection(true, destIP, destPort, targetSeqNum+2, 0)};
 }
