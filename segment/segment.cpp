@@ -115,6 +115,21 @@ bool isValidChecksum(Segment segment)
 uint16_t calculateCRC(Segment segment)
 {
     uint16_t crcPoly = 0x8005;
+    uint16_t crc = 0xFFFF;
+    size_t length = sizeof(segment.payload) / sizeof(segment.payload[0]);
+
+    for (size_t i = 0; i < length; i++) {
+        crc ^= (uint16_t)(segment.payload[i] << 8);
+        for (uint8_t bit = 0; bit < 8; bit++) {
+            if (crc & 0x8000) {
+                crc = (crc << 1) ^ crcPoly;
+            } else {
+                crc <<= 1;
+            }
+        }
+    }
+    
+    return crc;
 
     return 0;
 }

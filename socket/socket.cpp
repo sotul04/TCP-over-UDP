@@ -133,7 +133,10 @@ void Socket::listenerPacketThread()
 
             if (!isValidChecksum(received))
             {
-                continue;
+                if (!isValidCRC(received))
+                {
+                    continue;
+                }
             }
 
             Message newMessage(inet_ntoa(cliaddr.sin_addr), ntohs(cliaddr.sin_port), received);
@@ -235,8 +238,8 @@ Message Socket::listen(MessageFilter *filter, int timeout)
 
 void Socket::sendSegment(Segment segment, string ip, uint16_t port)
 {
+    segment = updateCRC(segment);
     segment = updateChecksum(segment);
-    // tambahin update crc
 
     uint8_t* sending = new uint8_t[segment.payloadSize + 20];
     serializeSegment(segment, sending);
