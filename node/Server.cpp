@@ -8,6 +8,8 @@ vector<Segment> createSegmentsFromString(const string &data, uint32_t seqNum)
     size_t totalLength = data.size();
     size_t numSegments = (totalLength + maxPayloadSize - 1) / maxPayloadSize; // Calculate number of segments
 
+    uint32_t seqNumNow = seqNum;
+
     for (size_t i = 0; i < numSegments; ++i)
     {
         // Get the starting index for the current segment's data
@@ -25,7 +27,8 @@ vector<Segment> createSegmentsFromString(const string &data, uint32_t seqNum)
         memcpy(seg.payload, data.c_str() + startIdx, currentPayloadSize);
 
         // Set the segment's sequence number
-        seg.seqNum = seqNum + i;
+        seg.seqNum = seqNumNow;
+        seqNumNow += seg.payloadSize;
 
         // Update the checksum for the segment
         // seg = updateChecksum(seg);
@@ -68,7 +71,7 @@ public:
             vector<Segment> data = createSegmentsFromString(b, status.seqNum);
             uint8_t content[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
             Segment metadata = makeSegment("string-baca-belakang.txt", 0, status.port);
-            metadata.seqNum = data.back().seqNum + 1;
+            metadata.seqNum = data.back().seqNum + data.back().payloadSize;
             metadata.flags.psh = 1;
             metadata.flags.fin = 1;
             data.push_back(metadata);
@@ -76,8 +79,6 @@ public:
             status = connection->sendData(status.ip, status.port, status.seqNum, data);
 
             cout << "-----------------FIN " << status.seqNum << endl;
-
-            // std::this_thread::sleep_for(std::chrono::seconds)
 
             connection->reqClosing(status.ip, status.port, status.seqNum);
         }

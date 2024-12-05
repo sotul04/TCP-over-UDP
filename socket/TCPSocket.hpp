@@ -26,7 +26,7 @@ public:
     Connection reqClosing(string destIP, uint16_t destPort, uint32_t finSeqNum);
     Connection accClosing(string destIp, uint16_t destPort, uint32_t finSeqNum);
 
-    void senderThread(const Message& message, std::atomic<int>& lastAck, std::atomic<bool> &abort);
+    void senderThread(const Message& message, uint32_t current, std::atomic<int>& lastAck, std::atomic<bool> &abort);
     //sliding algorithm
     Connection sendData(string destIP, uint16_t desPort, uint32_t seqNum, vector<Segment> data);
     pair<vector<Segment>, Connection> receiveData(string destIP, uint16_t destPort, uint32_t seqNum);

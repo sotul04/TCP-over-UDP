@@ -22,11 +22,12 @@ public:
         if (status.cont) {
             pair<vector<Segment>, Connection> result = connection->receiveData(status.ip, status.port, status.seqNum);
             // connection->accClosing(status.ip, status.port, status.seqNum);
+            cout << "SEQNUM: " << result.second.seqNum << endl;
             connection->accClosing(result.second.ip, result.second.port, result.second.seqNum);
             cout << "ENDED" << endl;
             string combined = combineAsString(result.first);
             cout << combined.size() << endl;
-            cout << combined << endl;
+            // cout << combined << endl;
         }
         connection->close();
     }
