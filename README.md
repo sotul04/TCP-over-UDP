@@ -19,12 +19,12 @@
 ## **Deskripsi Program**
 
 <p align="justify">
-Program ini adalah program yang mengirimmkan User Datagram Protocol dengan cara-cara dan arsitektur dari Transmission Control Protocol
+Program ini adalah program yang mengirimkan User Datagram Protocol dengan cara-cara dan arsitektur dari Transmission Control Protocol
 
 </p>
 
 ## **Tech Stack**
-1. Python
+1. C++
 
 ## **Algoritma dan Penjelasannya**
 Algoritma yang digunakan adalah sebagai berikut:
