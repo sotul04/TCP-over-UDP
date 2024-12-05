@@ -2,6 +2,7 @@
 #define CLIENT_HPP
 
 #include "node.hpp"
+#include "../file/FileTransfer.hpp"
 
 class Client: public Node
 {

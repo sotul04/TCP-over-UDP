@@ -8,7 +8,6 @@ void Client::setServerPort(uint16_t port)
 void Client::run()
 {
     connection->start();
-
     // make sure the serverPort has been set
     cout << OUT << "Trying to contact the sender at 255.255.255.255:" << serverPort << endl;
     Connection cont = connection->seekBroadcast("255.255.255.255", serverPort);
@@ -28,8 +27,12 @@ void Client::run()
             cout << message << endl;
         }
         else // file input
-        {
-            // TODO: file handle
+        {   
+            string outputPath = "output_"+metadata.first+"."+metadata.second;
+            result.first.pop_back();
+            receiveFile(result.first, outputPath);
+            cout << "Received file saved "<< outputPath << endl;
+            
         }
     }
     connection->close();

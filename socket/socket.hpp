@@ -27,6 +27,7 @@
 #define IN "[+] "
 #define OUT "[i] "
 #define INPUT "[?] "
+#define ERROR "[!] "
 
 using namespace std;
 

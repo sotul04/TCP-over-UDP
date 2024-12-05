@@ -1,1 +1,0 @@
-g++ -o client client.cpp segment/segment.cpp segment/segment_handler.cpp

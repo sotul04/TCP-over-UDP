@@ -279,7 +279,7 @@ Connection TCPSocket::sendData(string destIP, uint16_t destPort, uint32_t seqNum
                                      msg,
                                      ++LFS,
                                      std::ref(lastAck), std::ref(abort)));
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
 
         if (abort.load())

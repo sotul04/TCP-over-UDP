@@ -11,11 +11,7 @@ void receiveFile(const std::vector<Segment> &segments, const std::string &output
     }
 
     for (const auto &segment : segments) {
-        if (isValidChecksum(segment)) {
-            outFile.write(reinterpret_cast<const char *>(segment.payload), segment.payloadSize);
-        } else {
-            std::cerr << "Checksum failed for segment " << segment.seqNum << std::endl;
-        }
+        outFile.write(reinterpret_cast<const char *>(segment.payload), segment.payloadSize);
     }
 
     outFile.close();

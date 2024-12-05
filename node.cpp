@@ -3,8 +3,10 @@
 #include <regex>
 #include <cstdlib>
 #include <cstdint>
+#include <vector>
 #include "nodes/Client.hpp"
 #include "nodes/Server.hpp"
+#include "file/FileTransfer.hpp"
 using namespace std;
 
 bool isValidIPAddress(const std::string &ip)
@@ -107,12 +109,22 @@ void senderAction()
     }
     else // file input
     {
-        cout << INPUT << "File mode chosen, please enter the file path:" << endl;
+        cout << INPUT << "File mode chosen, please enter the file path: ";
         string pathInput;
         getline(cin, pathInput);
         // TODO read and check the file
+        vector<Segment> data = sendFile(pathInput,0);
+        if (data.empty()) {
+            cerr << ERROR << "Error: cannot open file " << pathInput << endl;
+            return;
+        }
+
         cout << OUT << "File has beed successfully read." << endl;
         // TODO: send file
+        Server server(port);
+        server.setData(data);
+        server.run();
+
     }
 }
 
