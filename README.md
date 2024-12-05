@@ -34,7 +34,15 @@ Algoritma yang digunakan adalah sebagai berikut:
 4. GoBackN: Algoritma untuk mengirim data dari server ke client
 
 ## **Cara Menggunakan Program** ##
-1. Run script.sh pada terminal
+1. Run script.sh pada terminal jika file executable belum ada
+2. Lalu, run file node dengan format ./node {ip} {port}
+```console
+./script.sh
+./node {ip} {port}
+
+// contoh
+./node localhost 8080
+```
 2. Pada program terdapat dua argumen yaitu ip dan port. Jika ip tidak dimasukkan, ip akan di set sebagai localhost
 3. Terdapat dua opsi yaitu Sender dan Receiver
 4. Untuk Sender, akan diberikan opsi untuk mengirim ketikan CLI atau file
