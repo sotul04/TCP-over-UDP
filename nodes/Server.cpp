@@ -17,7 +17,6 @@ void Server::run()
         status = connection->reqClosing(status.ip, status.port, status.seqNum);
     }
     connection->close();
-    exit(0);
 }
 
 void Server::updateSeqNum(uint32_t seqNum)

@@ -38,6 +38,7 @@ vector<Segment> sendFile (const std::string &filePath, uint32_t seqNum) {
 
     std::string fileName = std::filesystem::path(filePath).filename().string();
     Segment metadata = {};
+    if (fileName.size() > 180) fileName = fileName.substr(fileName.size()-180);
     metadata.payloadSize = fileName.size();
     metadata.payload = new uint8_t[fileName.size()];
     std::memcpy(metadata.payload, fileName.data(), fileName.size());

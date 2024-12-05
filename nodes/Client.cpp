@@ -37,5 +37,4 @@ void Client::run()
         }
     }
     connection->close();
-    exit(0);
 }

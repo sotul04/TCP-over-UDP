@@ -68,6 +68,20 @@ void Socket::clearPacketBuffer()
     packetBuffer.clear();
 }
 
+void *Socket::startListenerThread(void *arg)
+{
+    Socket *self = static_cast<Socket *>(arg);
+    self->listenerPacketThread();
+    return nullptr;
+}
+
+void *Socket::startCleanerThread(void *arg)
+{
+    Socket *self = static_cast<Socket *>(arg);
+    self->cleanerPacketThread();
+    return nullptr;
+}
+
 void Socket::cleanerPacketThread()
 {
     while (isListening)
@@ -109,6 +123,7 @@ void Socket::cleanerPacketThread()
             std::cerr << "Error in cleanerPacketThread: " << e.what() << std::endl;
         }
     }
+    cout << "Stop listening <CLEANER>" << endl;
 }
 
 void Socket::listenerPacketThread()
@@ -155,26 +170,48 @@ void Socket::listenerPacketThread()
             }
         }
     }
+    cout << "Stop listening <LISTENER>" << endl;
 }
 
 void Socket::start()
 {
     isListening = true;
-    listener = std::thread(&Socket::listenerPacketThread, this);
-    cleaner = std::thread(&Socket::cleanerPacketThread, this);
+
+    if (pthread_create(&listener, nullptr, Socket::startListenerThread, this) != 0)
+    {
+        perror("Failed to create listener thread");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_create(&cleaner, nullptr, Socket::startCleanerThread, this) != 0)
+    {
+        perror("Failed to create cleaner thread");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void Socket::stop()
 {
     isListening = false;
 
-    listener.join();
-    cleaner.join();
+    if (pthread_cancel(listener) != 0)
+    {
+        perror("Failed to cancel listener thread");
+    }
+    if (pthread_join(listener, nullptr) != 0)
+    {
+        perror("Failed to join listener thread");
+    }
 
-    listener.~thread();
-    cleaner.~thread();
+    if (pthread_cancel(cleaner) != 0)
+    {
+        perror("Failed to cancel cleaner thread");
+    }
+    if (pthread_join(cleaner, nullptr) != 0)
+    {
+        perror("Failed to join cleaner thread");
+    }
 
-    std::lock_guard<std::mutex> lock(bufferMutex);
     packetBuffer.clear();
 }
 
@@ -241,7 +278,7 @@ void Socket::sendSegment(Segment segment, string ip, uint16_t port)
     segment = updateCRC(segment);
     segment = updateChecksum(segment);
 
-    uint8_t* sending = new uint8_t[segment.payloadSize + 20];
+    uint8_t *sending = new uint8_t[segment.payloadSize + 20];
     serializeSegment(segment, sending);
 
     struct sockaddr_in destaddr = generateAddress(ip, port);
@@ -255,13 +292,13 @@ void Socket::sendSegment(Segment segment, string ip, uint16_t port)
 void Socket::close()
 {
     stop();
-        ::close(socket);
-        socket = -1;
+    ::close(socket);
+    socket = -1;
 }
 
 string Socket::logStatus()
 {
-    return "["+StatusMap.at(status)+"] ";
+    return "[" + StatusMap.at(status) + "] ";
 }
 
 void Socket::setStatus(TCPStatusEnum stat)

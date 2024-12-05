@@ -297,10 +297,7 @@ Connection TCPSocket::sendData(string destIP, uint16_t destPort, uint32_t seqNum
     // Join all threads
     for (auto &t : threads)
     {
-        if (t.joinable())
-        {
-            t.join();
-        }
+        t.join();
     }
 
     cout << OUT << "[SEND COMPLETE] All segments sent to " << destIP << ":" << destPort << endl;

@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <chrono>
 #include <thread>
+#include <pthread.h>
 #include <mutex>
 #include <map>
 #include "../segment/segment.hpp"
@@ -84,11 +85,14 @@ protected:
 
     int timeoutDefault;
     bool isListening;
-    thread listener;
-    thread cleaner;
+    pthread_t listener;
+    pthread_t cleaner;
 
     std::mutex bufferMutex;
     std::condition_variable bufferCV;
+
+    static void* startListenerThread(void* arg);
+    static void* startCleanerThread(void* arg);
 
 public:
     Socket(const string ip, const int16_t &port);
