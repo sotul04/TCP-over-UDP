@@ -3,11 +3,9 @@
 
 - [Author](#author)
 - [Deskripsi Program](#deskripsi-program)
-- [Requirement Program](#requirements-program)
-- [Set Up dan Build Program](#set-up-dan-build-program)
+- [Tech Stack](#tech-stack)
+- [Algoritma dan Penjelasannya](#algoritma-dan-penjelasannya)
 - [Cara Menggunakan Program](#cara-menggunakan-program)
-- [Home Page](#home-page)
-- [Test](#test)
 
 ## **Author**
 
