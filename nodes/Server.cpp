@@ -14,7 +14,7 @@ void Server::run()
         // data has set using setData method
         updateSeqNum(status.seqNum);
         status = connection->sendData(status.ip, status.port, status.seqNum, data);
-        status = connection->reqClosing(status.ip, status.port, status.seqNum);
+        status = connection->accClosing(status.ip, status.port, status.seqNum);
     }
     connection->close();
 }

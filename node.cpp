@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
             int portArg = atoi(argv[1]);
             if (portArg < 1 || portArg > 65535)
             {
-                cerr << "Invalid port number. Must be between 1 and 65535" << endl;
+                cerr << ERROR << "Invalid port number. Must be between 1 and 65535" << endl;
                 return 1;
             }
             port = static_cast<uint16_t>(portArg);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
             string ipArg(argv[1]);
             if (!isValidIPAddress(ipArg) && ipArg != "localhost")
             {
-                cerr << "Invalid IP Address." << endl;
+                cerr << ERROR << "Invalid IP Address." << endl;
                 return 1;
             }
             if (ipArg == "localhost")
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
             int portArg = atoi(argv[2]);
             if (portArg < 1 || portArg > 65535)
             {
-                cerr << "Invalid port number. Must be between 1 and 65535" << endl;
+                cerr << ERROR << "Invalid port number. Must be between 1 and 65535" << endl;
                 return 1;
             }
             port = static_cast<uint16_t>(portArg);

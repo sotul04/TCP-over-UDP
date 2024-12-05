@@ -120,10 +120,9 @@ void Socket::cleanerPacketThread()
         }
         catch (const std::exception &e)
         {
-            std::cerr << "Error in cleanerPacketThread: " << e.what() << std::endl;
+            std::cerr << ERROR << "Error in cleanerPacketThread: " << e.what() << std::endl;
         }
     }
-    cout << "Stop listening <CLEANER>" << endl;
 }
 
 void Socket::listenerPacketThread()
@@ -166,11 +165,10 @@ void Socket::listenerPacketThread()
         {
             if (isListening)
             {
-                std::cerr << "Error in listenerPacketThread: " << e.what() << "\n";
+                std::cerr << ERROR << "Error in listenerPacketThread: " << e.what() << "\n";
             }
         }
     }
-    cout << "Stop listening <LISTENER>" << endl;
 }
 
 void Socket::start()
@@ -267,7 +265,7 @@ Message Socket::listen(MessageFilter *filter, int timeout)
         }
         catch (const std::exception &e)
         {
-            std::cerr << "Error in listen: " << e.what() << "\n";
+            std::cerr << ERROR << "Error in listen: " << e.what() << "\n";
         }
     }
     throw exception();
@@ -294,6 +292,7 @@ void Socket::close()
     stop();
     ::close(socket);
     socket = -1;
+    cout << OUT << "Connection closed successfully" << endl;
 }
 
 string Socket::logStatus()

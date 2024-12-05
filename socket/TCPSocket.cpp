@@ -24,11 +24,11 @@ Connection TCPSocket::seekBroadcast(string destIP, uint16_t destPort)
         }
         catch (const TimeoutException &te)
         {
-            cout << "REQUEST TIMEOUT, retrying... " << endl;
+            cout << ERROR << "REQUEST TIMEOUT, retrying... " << endl;
             retries--;
         }
     }
-    cout << "FAILED to discover SERVER, terminating... " << endl;
+    cout << ERROR << "FAILED to discover SERVER, terminating... " << endl;
     exit(EXIT_SUCCESS);
 }
 
@@ -47,7 +47,7 @@ Connection TCPSocket::listenBroadcast()
     }
     catch (const TimeoutException &te)
     {
-        cout << "LISTEN TIMEOUT, terminating..." << endl;
+        cout << ERROR << "LISTEN TIMEOUT, terminating..." << endl;
         exit(EXIT_SUCCESS);
     }
 }
@@ -83,15 +83,15 @@ Connection TCPSocket::reqHandShake(string destIP, uint16_t destPort)
         }
         catch (const TimeoutException &te)
         {
-            cout << "Timeout waiting for SYN-ACK. Retrying..." << endl;
+            cout << ERROR << "Timeout waiting for SYN-ACK. Retrying..." << endl;
         }
         catch (const std::exception &e)
         {
-            cerr << "Error during handshake: " << e.what() << endl;
+            cerr << ERROR << "Error during handshake: " << e.what() << endl;
         }
     }
 
-    cout << "Handshake failed after " << RETRIES << " retries." << endl;
+    cout << ERROR << "Handshake failed after " << RETRIES << " retries." << endl;
     return Connection(false, destIP, destPort, 0, 0);
 }
 
@@ -130,53 +130,61 @@ Connection TCPSocket::accHandShake(string destIP, uint16_t destPort)
             }
             catch (const TimeoutException &te)
             {
-                cout << "Timeout waiting for handshake completion. Retrying..." << endl;
+                cout << ERROR << "Timeout waiting for handshake completion. Retrying..." << endl;
             }
             catch (const std::exception &e)
             {
-                cerr << "Error during handshake: " << e.what() << endl;
+                cerr << ERROR << "Error during handshake: " << e.what() << endl;
             }
         }
 
-        cout << "Handshake failed after " << RETRIES << " retries." << endl;
+        cout << ERROR << "Handshake failed after " << RETRIES << " retries." << endl;
         return Connection(false, destIP, destPort, 0, 0);
     }
     catch (const TimeoutException &e)
     {
     }
 
-    cout << "Timeout waiting for handshake request." << endl;
+    cout << ERROR << "Timeout waiting for handshake request." << endl;
     return Connection(false, destIP, destPort, 0, 0);
 }
 
 Connection TCPSocket::reqClosing(string destIP, uint16_t destPort, uint32_t finSeqNum)
 {
+    uint32_t seqNum = finSeqNum;
     for (int i = RETRIES; i > 0; i--)
     {
         try
         {
-            cout << OUT << "[CLOSING] " << "Sending FIN request to " << destIP << ":" << destPort << endl;
-            sendSegment(fin(finSeqNum), destIP, destPort);
+            setStatus(FIN_WAIT_1);
+            cout << OUT << logStatus() << "Sending FIN request to " << destIP << ":" << destPort << endl;
+            sendSegment(fin(seqNum), destIP, destPort);
 
-            MessageFilter filter = MessageFilter().withIP(destIP).withPort(destPort).withFlags(FIN_ACK_FLAG).withAckNum(++finSeqNum);
-            Message finackmsg = listen(&filter, HANDSHAKE_TIMEOUT);
+            MessageFilter filterAck = MessageFilter().withIP(destIP).withPort(destPort).withFlags(ACK_FLAG).withAckNum(seqNum+1);
+            Message ackRecv = listen(&filterAck, HANDSHAKE_TIMEOUT);
+            setStatus(FIN_WAIT_2);
+            cout << IN << logStatus() << "Received ACK request from " << destIP << ":" << destPort << endl;
 
-            cout << IN << "[CLOSING] " << "Received FIN-ACK request from " << destIP << ":" << destPort << endl;
+            MessageFilter filterFin = MessageFilter().withIP(destIP).withPort(destPort).withFlags(FIN_FLAG).withSeqNum(seqNum+2);
+            Message finRecv = listen(&filterFin, HANDSHAKE_TIMEOUT);
+            setStatus(CLOSED);
+            cout << IN << logStatus() << "Received FIN request from " << destIP << ":" << destPort << endl;
 
-            sendSegment(ack(finackmsg.segment.seqNum + 1), destIP, destPort);
-            cout << OUT << "[CLOSING] " << "Sending ACK request to " << destIP << ":" << destPort << endl;
+            sendSegment(ack(finRecv.segment.seqNum + 1), destIP, destPort);
+            cout << OUT << logStatus() << "Sending ACK request to " << destIP << ":" << destPort << endl;
+
             return Connection(true, destIP, destPort, 0, 0);
         }
         catch (const TimeoutException &te)
         {
-            cout << "Timeout waiting for FIN-ACK. Retrying..." << endl;
+            cout << ERROR << "Timeout waiting for ACK. Retrying..." << endl;
         }
         catch (const std::exception &e)
         {
-            cerr << "Error during closing: " << e.what() << endl;
+            cerr << ERROR << "Error during closing: " << e.what() << endl;
         }
     }
-    cout << "Timeout waiting FIN-ACK request." << endl;
+    cout << ERROR << "Timeout waiting ACK request." << endl;
     return Connection(false, destIP, destPort, 0, 0);
 }
 
@@ -186,38 +194,47 @@ Connection TCPSocket::accClosing(string destIP, uint16_t destPort, uint32_t finS
     {
         MessageFilter finfilter = MessageFilter().withIP(destIP).withPort(destPort).withFlags(FIN_FLAG).withSeqNum(finSeqNum);
         Message finmsg = listen(&finfilter, HANDSHAKE_TIMEOUT);
-        cout << IN << "[CLOSING] " << "Received FIN request from " << destIP << ":" << destPort << endl;
-        uint32_t seqNum = randomNumber();
+        setStatus(CLOSE_WAIT);
+        cout << IN << logStatus() << "Received FIN request from " << destIP << ":" << destPort << endl;
+        uint32_t seqNum = finSeqNum + 1;
+
+        sendSegment(ack(seqNum), destIP, destPort);
+        cout << OUT << logStatus() << "Sending ACK request to " << destIP << ":" << destPort << endl;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
         for (int i = RETRIES; i > 0; i--)
         {
             try
             {
-                sendSegment(finAck(finmsg.segment.seqNum, finmsg.segment.seqNum + 1), destIP, destPort);
-                cout << OUT << "[CLOSING] " << "Sending FIN-ACK request to " << destIP << ":" << destPort << endl;
+                sendSegment(fin(seqNum + 1), destIP, destPort);
+                setStatus(LAST_ACK);
+                cout << OUT << logStatus() << "Sending FIN request to " << destIP << ":" << destPort << endl;
 
-                MessageFilter ackfilter = MessageFilter().withIP(destIP).withPort(destPort).withFlags(ACK_FLAG).withAckNum(finmsg.segment.seqNum + 1);
-                Message ackmsg = listen(&ackfilter, HANDSHAKE_TIMEOUT);
-                cout << IN << "[CLOSING] " << "Received ACK request from " << ackmsg.ip << ":" << ackmsg.port << endl;
+                MessageFilter ackFilter = MessageFilter().withIP(destIP).withPort(destPort).withFlags(ACK_FLAG).withAckNum(seqNum + 2);
+                Message ackMsg = listen(&ackFilter, HANDSHAKE_TIMEOUT);
+                setStatus(CLOSED);
+                cout << IN << logStatus() << "Received ACK request from " << destIP << ":" << destPort << endl;
+
                 return Connection(true, destIP, destPort, 0, 0);
             }
             catch (const TimeoutException &te)
             {
-                cout << "Timeout waiting for ACK. Retrying..." << endl;
+                cout << ERROR << "Timeout waiting for ACK. Retrying..." << endl;
             }
             catch (const std::exception &e)
             {
-                cerr << "Error during closing: " << e.what() << endl;
+                cerr << ERROR << "Error during closing: " << e.what() << endl;
             }
         }
-        cout << "Timeout waiting for ACK request.";
+        cout << ERROR << "Timeout waiting for ACK request.";
         return Connection(false, destIP, destPort, 0, 0);
     }
     catch (const TimeoutException &te)
     {
     }
 
-    cout << "Timeout waiting for FIN request." << endl;
+    cout << ERROR << "Timeout waiting for FIN request." << endl;
     return Connection(false, destIP, destPort, 0, 0);
 }
 
@@ -248,11 +265,11 @@ void TCPSocket::senderThread(const Message &message, uint32_t current, std::atom
         }
         catch (const TimeoutException &)
         {
-            cout << "[TIMEOUT] No ACK received for [S=" << message.segment.seqNum << "]. Retrying..." << endl;
+            cout << ERROR << "[TIMEOUT] No ACK received for [S=" << message.segment.seqNum << "]. Retrying..." << endl;
             retries--;
         }
     }
-    cout << "[ERROR] Failed to send segment [S=" << message.segment.seqNum << "] after retries." << endl;
+    cout << ERROR << "[ERROR] Failed to send segment [S=" << message.segment.seqNum << "] after retries." << endl;
     abort.store(true);
 }
 
@@ -279,12 +296,12 @@ Connection TCPSocket::sendData(string destIP, uint16_t destPort, uint32_t seqNum
                                      msg,
                                      ++LFS,
                                      std::ref(lastAck), std::ref(abort)));
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
         if (abort.load())
         {
-            cerr << "[ABORT] Sending aborted due to errors." << endl;
+            cerr << ERROR << "[ABORT] Sending aborted due to errors." << endl;
             break;
         }
 
@@ -300,8 +317,8 @@ Connection TCPSocket::sendData(string destIP, uint16_t destPort, uint32_t seqNum
         t.join();
     }
 
-    cout << OUT << "[SEND COMPLETE] All segments sent to " << destIP << ":" << destPort << endl;
-    return Connection(true, destIP, destPort, data.at(data.size()-1).seqNum+data.at(data.size()-1).payloadSize, 0);
+    cout << OUT << "All segments sent to " << destIP << ":" << destPort << endl;
+    return Connection(true, destIP, destPort, data.at(data.size() - 1).seqNum + data.at(data.size() - 1).payloadSize, 0);
 }
 
 pair<vector<Segment>, Connection> TCPSocket::receiveData(string destIP, uint16_t destPort, uint32_t seqNum)
@@ -350,7 +367,7 @@ pair<vector<Segment>, Connection> TCPSocket::receiveData(string destIP, uint16_t
         catch (const TimeoutException &)
         {
             timeoutLimit++;
-            cout << "[TIMEOUT] Waiting for segment [S=" << targetSeqNum << "] from " << destIP << ":" << destPort << endl;
+            cout << ERROR << "[TIMEOUT] Waiting for segment [S=" << targetSeqNum << "] from " << destIP << ":" << destPort << endl;
         }
     }
 

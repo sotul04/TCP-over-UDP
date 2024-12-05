@@ -343,7 +343,6 @@ pair<string, string> extractMetada(const Segment &segment)
 string combineAsString(const vector<Segment> &segments)
 {
     string combined;
-    cout << "try to combined" << endl;
 
     for (const auto& segment : segments)
     {

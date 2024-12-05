@@ -16,14 +16,14 @@ void Client::run()
     if (status.cont)
     {
         pair<vector<Segment>, Connection> result = connection->receiveData(status.ip, status.port, status.seqNum);
-        connection->accClosing(result.second.ip, result.second.port, result.second.seqNum);
+        connection->reqClosing(result.second.ip, result.second.port, result.second.seqNum);
         pair<string, string> metadata = extractMetada(result.first.back());
         // string input
         if (metadata.first.empty() && metadata.second.empty())
         {
             result.first.pop_back();
             string message = combineAsString(result.first);
-            cout << "Received message:" << endl;
+            cout << "Received message:";
             cout << message << endl;
         }
         else // file input
@@ -32,7 +32,7 @@ void Client::run()
             if (!metadata.second.empty()) outputPath += "."+metadata.second;
             result.first.pop_back();
             receiveFile(result.first, outputPath);
-            cout << "Received file saved "<< outputPath << endl;
+            cout << OUT << "Received file saved "<< outputPath << endl;
             
         }
     }

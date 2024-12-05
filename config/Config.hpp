@@ -16,6 +16,6 @@
 #define MIN_CLEANER_TIME 0.1f
 #define CLEANER_LIMIT 5
 
-#define RETRIES 10
+#define RETRIES 5
 
 #endif
