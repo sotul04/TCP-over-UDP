@@ -5,7 +5,7 @@ void Server::run()
     connection->start();
 
     // listening to the broad
-    cout << "Listening to the broadcast port for clients." << endl;
+    cout << OUT << "Listening to the broadcast port for clients." << endl;
     Connection conn = connection->listenBroadcast();
     Connection status = connection->accHandShake(conn.ip, conn.port);
 

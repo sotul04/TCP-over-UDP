@@ -303,7 +303,7 @@ Connection TCPSocket::sendData(string destIP, uint16_t destPort, uint32_t seqNum
         }
     }
 
-    cout << "[SEND COMPLETE] All segments sent to " << destIP << ":" << destPort << endl;
+    cout << OUT << "[SEND COMPLETE] All segments sent to " << destIP << ":" << destPort << endl;
     return Connection(true, destIP, destPort, data.at(data.size()-1).seqNum+data.at(data.size()-1).payloadSize, 0);
 }
 

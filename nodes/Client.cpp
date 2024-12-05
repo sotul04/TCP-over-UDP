@@ -10,7 +10,7 @@ void Client::run()
     connection->start();
 
     // make sure the serverPort has been set
-    cout << "Trying to contact the sender at 255.255.255.255:" << serverPort << endl;
+    cout << OUT << "Trying to contact the sender at 255.255.255.255:" << serverPort << endl;
     Connection cont = connection->seekBroadcast("255.255.255.255", serverPort);
 
     Connection status = connection->reqHandShake(cont.ip, cont.port);
