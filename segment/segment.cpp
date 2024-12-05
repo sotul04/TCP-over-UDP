@@ -112,6 +112,25 @@ bool isValidChecksum(Segment segment)
     return computedChecksum == segment.checksum;
 }
 
+uint16_t calculateCRC(Segment segment)
+{
+    uint16_t crcPoly = 0x8005;
+
+    return 0;
+}
+
+Segment updateCRC(Segment segment)
+{
+    segment.urgentPointer = calculateCRC(segment);
+    return segment;
+}
+
+bool isValidCRC(Segment segment)
+{
+    uint16_t computedCRC = calculateCRC(segment);
+    return computedCRC == segment.urgentPointer;
+}
+
 void printSegment(const Segment &segment)
 {
     using namespace std;
@@ -321,7 +340,7 @@ string combineAsString(const vector<Segment> &segments)
 
 vector<Segment> prepareStringSegments(const string& data, uint32_t seqNum)
 {
-    const size_t maxPayloadSize = 1460;
+    const size_t maxPayloadSize = 1444;
     vector<Segment> segments;
 
     size_t totalLength = data.size();

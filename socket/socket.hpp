@@ -18,7 +18,6 @@
 #include <mutex>
 #include <map>
 #include "../segment/segment.hpp"
-#include "../segment/segment_handler.hpp"
 #include "../message/message.hpp"
 #include "../message/messageFilter.hpp"
 #include "../config/Config.hpp"
@@ -77,8 +76,6 @@ protected:
      * Socket descriptor
      */
     int32_t socket;
-
-    SegmentHandler *segmentHandler;
 
     TCPStatusEnum status;
 

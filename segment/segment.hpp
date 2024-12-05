@@ -88,6 +88,12 @@ Segment updateChecksum(Segment segment);
  */
 bool isValidChecksum(Segment segment);
 
+uint16_t calculateCRC(Segment segment);
+
+Segment updateCRC(Segment segment);
+
+bool isValidCRC(Segment segment);
+
 void printSegment(const Segment &segment);
 
 bool operator==(const Segment &lhs, const Segment &rhs);

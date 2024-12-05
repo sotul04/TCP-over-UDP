@@ -12,7 +12,6 @@ Socket::Socket(const string ip, const int16_t &port)
         exit(EXIT_FAILURE);
     }
 
-    segmentHandler = new SegmentHandler();
     status = CLOSED;
 
     cleanerTime = CLEANER_TIME;
@@ -21,7 +20,6 @@ Socket::Socket(const string ip, const int16_t &port)
 
 Socket::~Socket()
 {
-    delete segmentHandler;
     packetBuffer.clear();
     if (socket >= 0)
     {
@@ -238,6 +236,7 @@ Message Socket::listen(MessageFilter *filter, int timeout)
 void Socket::sendSegment(Segment segment, string ip, uint16_t port)
 {
     segment = updateChecksum(segment);
+    // tambahin update crc
 
     uint8_t* sending = new uint8_t[segment.payloadSize + 20];
     serializeSegment(segment, sending);
