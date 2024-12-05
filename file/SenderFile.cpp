@@ -5,11 +5,32 @@
 #include <algorithm>
 #include <stdexcept>
 #include "../segment/segment.hpp"
-
+#include <bitset>
 const uint16_t MAX_PAYLOAD_SIZE = 1460;
 
+std::string pdfToBinaryString(const std::string &filePath)
+{
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file)
+    {
+        throw std::runtime_error("Could not open the file.");
+    }
+
+    std::ostringstream binaryString;
+
+    char byte;
+    while (file.get(byte))
+    {
+        // Convert each byte to an 8-bit binary representation
+        binaryString << std::bitset<8>(static_cast<unsigned char>(byte));
+    }
+
+    file.close();
+    return binaryString.str();
+}
+
 std::vector<uint8_t> readFile(const std::string &filepath) {
-    std::ifstream file(filepath, std::ios::binary);
+    std::ifstream file(filepath, std::ios::binary | std::ios::ate);
     if (!file) {
         throw std::runtime_error("Unable to open file: " + filepath);
     }
@@ -41,23 +62,26 @@ void cleanupSegments(std::vector<Segment> &segments) {
     }
 }
 
-int main() {
-    try {
-        std::string filePath = "Test.pdf";
-        uint16_t sourcePort = 12345;
-        uint16_t destPort = 80;
 
-        auto fileData = readFile(filePath);
-        auto segments = createSegmentsFromFile(fileData, sourcePort, destPort);
+int main()
+{
+    try
+    {
+        std::string filePath = "tost.pdf"; // Replace with your PDF file path
+        std::string binaryString = pdfToBinaryString(filePath);
 
-        for (const auto &segment : segments) {
-            printSegment(segment);
-        }
+        std::cout << "Binary string representation of the PDF file:" << std::endl;
+        std::cout << binaryString << std::endl;
 
-        cleanupSegments(segments);
+        // Optional: Save the binary string to a file
+        std::ofstream outputFile("binary_output.txt");
+        outputFile << binaryString;
+        outputFile.close();
 
-        std::cout << "File split into segments successfully!" << std::endl;
-    } catch (const std::exception &e) {
+        std::cout << "Binary string saved to binary_output.txt" << std::endl;
+    }
+    catch (const std::exception &e)
+    {
         std::cerr << "Error: " << e.what() << std::endl;
     }
 
