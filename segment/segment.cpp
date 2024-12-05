@@ -128,7 +128,7 @@ uint16_t calculateCRC(Segment segment)
             }
         }
     }
-    
+
     return crc;
 
     return 0;
@@ -136,7 +136,11 @@ uint16_t calculateCRC(Segment segment)
 
 Segment updateCRC(Segment segment)
 {
-    segment.urgentPointer = calculateCRC(segment);
+    if (segment.payload != nullptr && segment.payloadSize > 0)
+    {
+        segment.urgentPointer = calculateCRC(segment);
+    }
+    
     return segment;
 }
 
