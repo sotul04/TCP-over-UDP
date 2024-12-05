@@ -185,10 +185,8 @@ bool operator==(const Segment &lhs, const Segment &rhs)
 
 Segment copySegment(const Segment &source)
 {
-    // Create a new segment
     Segment copy = {};
 
-    // Copy all the scalar members
     copy.sourcePort = source.sourcePort;
     copy.destPort = source.destPort;
     copy.seqNum = source.seqNum;
@@ -208,7 +206,6 @@ Segment copySegment(const Segment &source)
     copy.urgentPointer = source.urgentPointer;
     copy.payloadSize = source.payloadSize;
 
-    // Allocate new memory for the payload and copy the content
     if (source.payload != nullptr && source.payloadSize > 0)
     {
 
@@ -320,4 +317,47 @@ string combineAsString(const vector<Segment> &segments)
     }
 
     return combined;
+}
+
+vector<Segment> prepareStringSegments(const string& data, uint32_t seqNum)
+{
+    const size_t maxPayloadSize = 1460;
+    vector<Segment> segments;
+
+    size_t totalLength = data.size();
+    size_t numSegments = (totalLength + maxPayloadSize - 1) / maxPayloadSize;
+
+    uint32_t seqNumNow = seqNum;
+
+    for (size_t i = 0; i < numSegments; ++i)
+    {
+        size_t startIdx = i * maxPayloadSize;
+        size_t currentPayloadSize = std::min(maxPayloadSize, totalLength - startIdx);
+
+        Segment seg = {};
+        seg.payload = new uint8_t[currentPayloadSize];
+        seg.payloadSize = currentPayloadSize;
+        seg.data_offset = 5;
+
+        memcpy(seg.payload, data.c_str() + startIdx, currentPayloadSize);
+
+        seg.seqNum = seqNumNow;
+        seqNumNow += seg.payloadSize;
+        segments.push_back(seg);
+    }
+
+    Segment metadata = {};
+    metadata.payloadSize = 0;
+    metadata.payload = nullptr;
+    metadata.seqNum = seqNumNow;
+    metadata.flags.psh = 1; // EOF
+    metadata.flags.fin = 1;
+    metadata.ackNum = 0;
+    metadata.window = 0;
+    metadata.urgentPointer = 0;
+    metadata.data_offset = 5;
+    
+    segments.push_back(metadata);
+
+    return segments;
 }

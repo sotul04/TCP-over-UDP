@@ -167,14 +167,11 @@ void Socket::stop()
 {
     isListening = false;
 
-    if (socket >= 0)
-    {
-        ::close(socket);
-        socket = -1;
-    }
-
     listener.join();
     cleaner.join();
+
+    listener.~thread();
+    cleaner.~thread();
 
     std::lock_guard<std::mutex> lock(bufferMutex);
     packetBuffer.clear();
@@ -255,12 +252,9 @@ void Socket::sendSegment(Segment segment, string ip, uint16_t port)
 
 void Socket::close()
 {
-    if (socket >= 0)
-    {
+    stop();
         ::close(socket);
         socket = -1;
-    }
-    stop();
 }
 
 string Socket::logStatus()

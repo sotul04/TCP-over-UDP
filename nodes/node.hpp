@@ -12,12 +12,16 @@ class Node
 {
 protected:
     TCPSocket *connection;
+    vector<Segment> data;
+    string ip;
+    uint16_t port;
 
 public:
     Node(string ip, uint16_t port);
-    void run();
+    virtual void run() = 0;
     virtual ~Node();
-    virtual void handleMessage(void *buffer) = 0;
+    void setData(vector<Segment> segments);
+    vector<Segment> getData() const;
 };
 
 #endif

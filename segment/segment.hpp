@@ -102,6 +102,8 @@ Segment makeSegment(const string &data, uint16_t sport, uint16_t dport);
 
 pair<string, string> extractMetada(const Segment &segment);
 
+// string handler
 string combineAsString(const vector<Segment> &segments);
+vector<Segment> prepareStringSegments(const string &data, uint32_t seqNum);
 
 #endif

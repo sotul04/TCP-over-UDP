@@ -262,13 +262,6 @@ Connection TCPSocket::sendData(string destIP, uint16_t destPort, uint32_t seqNum
     uint32_t LAR = 0;                 // Last Acknowledgment Received
     uint32_t LFS = 0;                 // Last Frame Sent
 
-    map<uint32_t, uint32_t> seqNum2Segment;
-    int i = 1;
-    for (Segment &s : data)
-    {
-        seqNum2Segment[s.seqNum] = i++;
-    }
-
     cout << OUT << "Sending input to " << destIP << ":" << destPort << endl;
 
     std::atomic<int> lastAck(0);
