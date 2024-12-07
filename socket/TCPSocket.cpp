@@ -42,7 +42,10 @@ Connection TCPSocket::listenBroadcast()
         Message searchingMsg = listen(&filter, BROADCAST_LISTEN_TIMEOUT);
 
         Segment response = makeSegment("APPROVED", port, searchingMsg.port);
-        sendSegment(response, searchingMsg.ip, searchingMsg.port);
+        for (int i = 10; i > 0; i--)
+        {
+            sendSegment(response, searchingMsg.ip, searchingMsg.port);
+        }
         return Connection(true, searchingMsg.ip, searchingMsg.port, 0, 0);
     }
     catch (const TimeoutException &te)
@@ -76,7 +79,10 @@ Connection TCPSocket::reqHandShake(string destIP, uint16_t destPort)
                  << "] Received SYN-ACK request from " << synAckMessage.ip << ":" << synAckMessage.port << endl;
 
             uint32_t ackNum = synAckMessage.segment.seqNum + 1;
-            sendSegment(ack(ackNum), destIP, destPort);
+            for (int i = 0; i < 10; i++)
+            {
+                sendSegment(ack(ackNum), destIP, destPort);
+            }
             cout << OUT << logStatus() << "[A=" << ackNum << "] Sending ACK request to " << destIP << ":" << destPort << endl;
             cout << IN << "Ready to receive input from " << destIP << ":" << destPort << endl;
             return Connection(true, destIP, destPort, seqNum, ackNum);
@@ -160,12 +166,12 @@ Connection TCPSocket::reqClosing(string destIP, uint16_t destPort, uint32_t finS
             cout << OUT << logStatus() << "Sending FIN request to " << destIP << ":" << destPort << endl;
             sendSegment(fin(seqNum), destIP, destPort);
 
-            MessageFilter filterAck = MessageFilter().withIP(destIP).withPort(destPort).withFlags(ACK_FLAG).withAckNum(seqNum+1);
+            MessageFilter filterAck = MessageFilter().withIP(destIP).withPort(destPort).withFlags(ACK_FLAG).withAckNum(seqNum + 1);
             Message ackRecv = listen(&filterAck, HANDSHAKE_TIMEOUT);
             setStatus(FIN_WAIT_2);
             cout << IN << logStatus() << "Received ACK request from " << destIP << ":" << destPort << endl;
 
-            MessageFilter filterFin = MessageFilter().withIP(destIP).withPort(destPort).withFlags(FIN_FLAG).withSeqNum(seqNum+2);
+            MessageFilter filterFin = MessageFilter().withIP(destIP).withPort(destPort).withFlags(FIN_FLAG).withSeqNum(seqNum + 2);
             Message finRecv = listen(&filterFin, HANDSHAKE_TIMEOUT);
             setStatus(CLOSED);
             cout << IN << logStatus() << "Received FIN request from " << destIP << ":" << destPort << endl;
@@ -245,7 +251,8 @@ void TCPSocket::senderThread(const Message &message, uint32_t current, std::atom
     {
         try
         {
-            sendSegment(message.segment, message.ip, message.port);
+            for (int i = 0; i < 5; i++)
+                sendSegment(message.segment, message.ip, message.port);
             cout << OUT << logStatus() << "[Seg " << current << "] [S=" << message.segment.seqNum << "] Sent" << endl;
 
             MessageFilter ackFilter = MessageFilter()
@@ -330,12 +337,13 @@ pair<vector<Segment>, Connection> TCPSocket::receiveData(string destIP, uint16_t
     uint32_t targetSeqNum = seqNum;
     int timeoutLimit = 0;
 
-    while (!finished && timeoutLimit < 20)
+    while (!finished && timeoutLimit < RETRIES)
     {
         try
         {
             MessageFilter filter = MessageFilter().withIP(destIP).withPort(destPort);
             Message message = listen(&filter, RETRANSMIT_TIMEOUT);
+            timeoutLimit = 0;
 
             if (message.segment.seqNum < targetSeqNum)
             {
@@ -347,7 +355,10 @@ pair<vector<Segment>, Connection> TCPSocket::receiveData(string destIP, uint16_t
                 if (message.segment.flags.fin == 1 && message.segment.flags.psh == 1)
                 {
                     cout << IN << logStatus() << "Received metada from " << message.ip << ":" << message.port << endl;
-                    sendSegment(ack(message.segment.seqNum + message.segment.payloadSize), message.ip, message.port);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        sendSegment(ack(message.segment.seqNum + message.segment.payloadSize), message.ip, message.port);
+                    }
                     pair<string, string> metadata = extractMetada(message.segment);
                     receivedSegments.push_back(copySegment(message.segment));
                     cout << IN << "[METADATA] name: " << metadata.first << " extension: " << metadata.second << endl;
@@ -359,7 +370,10 @@ pair<vector<Segment>, Connection> TCPSocket::receiveData(string destIP, uint16_t
                 receivedSegments.push_back(copySegment(message.segment));
                 cout << IN << logStatus() << "[Seq " << receivedSegments.size() << "] [S=" << message.segment.seqNum << "] ACKed" << endl;
 
-                sendSegment(ack(targetSeqNum + message.segment.payloadSize), message.ip, message.port);
+                for (int i = 0; i < 5; i++)
+                {
+                    sendSegment(ack(targetSeqNum + message.segment.payloadSize), message.ip, message.port);
+                }
                 targetSeqNum += message.segment.payloadSize;
                 cout << OUT << logStatus() << "[Seq " << receivedSegments.size() << "] [A=" << targetSeqNum << "] Sent" << endl;
             }
