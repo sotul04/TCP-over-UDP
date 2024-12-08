@@ -251,9 +251,15 @@ void TCPSocket::senderThread(const Message &message, uint32_t current, std::atom
     {
         try
         {
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 3; i++)
                 sendSegment(message.segment, message.ip, message.port);
             cout << OUT << logStatus() << "[Seg " << current << "] [S=" << message.segment.seqNum << "] Sent" << endl;
+
+            if (lastAck.load() > current)
+            {
+                cout << IN << logStatus() << "[Seg " << current << "] [A=" << message.segment.seqNum + message.segment.payloadSize << "] ACKed" << endl;
+                return;
+            }
 
             MessageFilter ackFilter = MessageFilter()
                                           .withIP(message.ip)
@@ -263,11 +269,8 @@ void TCPSocket::senderThread(const Message &message, uint32_t current, std::atom
             Message ackMsg = listen(&ackFilter, RETRANSMIT_TIMEOUT);
 
             cout << IN << logStatus() << "[Seg " << current << "] [A=" << ackMsg.segment.ackNum << "] ACKed" << endl;
-            while (lastAck.load() + 1 != current)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            }
-            lastAck.store(current);
+            if (lastAck.load() < current)
+                lastAck.store(current);
             return;
         }
         catch (const TimeoutException &)
@@ -347,7 +350,10 @@ pair<vector<Segment>, Connection> TCPSocket::receiveData(string destIP, uint16_t
 
             if (message.segment.seqNum < targetSeqNum)
             {
-                sendSegment(ack(message.segment.seqNum + message.segment.payloadSize), message.ip, message.port);
+                for (int i = 0; i < 5; i++)
+                {
+                    sendSegment(ack(message.segment.seqNum + message.segment.payloadSize), message.ip, message.port);
+                }
             }
             else if (message.segment.seqNum == targetSeqNum)
             {
